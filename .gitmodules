@@ -1,0 +1,3 @@
+[submodule "hardware/kicad/pdjr-kicad-libraries"]
+	path = hardware/kicad/pdjr-kicad-libraries
+	url = https://github.com/preeve9534/pdjr-kicad-libraries
