@@ -1,7 +1,9 @@
 # TMP108 - NMEA 2000 temperature sensor module
 
-__TMP108__ is an NMEA 2000 module which allows the connection of up to
-eight LM335Z temperature sensors.
+__TMP108__ is an NMEA 2000 temperature sensor module which supports the
+connection of up to eight
+[National Semiconductor LM335Z](https://datasheet.octopart.com/LM335Z-NOPB-Texas-Instruments-datasheet-7836729.pdf)
+(or equivalent) temperature sensors.
 The module transmits temperature readings from the connected sensors
 over NMEA 2000 using [PGN 130316 Temperature, Extended Range](
 https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
