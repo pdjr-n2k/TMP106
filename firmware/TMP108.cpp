@@ -177,6 +177,11 @@ typedef struct { unsigned long PGN; void (*Handler)(const tN2kMsg &N2kMsg); } tN
 tNMEA2000Handler NMEA2000Handlers[]={ {0, 0} };
 
 /**********************************************************************
+ * SID transmission counter
+ */
+unsigned char SID = 0;
+
+/**********************************************************************
  * DIL_SWITCH switch decoder.
  */
 int ENCODER_PINS[] = GPIO_ENCODER_PINS;
@@ -199,10 +204,7 @@ LedManager LED_MANAGER (LED_MANAGER_HEARTBEAT, LED_MANAGER_INTERVAL);
 unsigned char SENSOR_PINS[] = GPIO_SENSOR_PINS;
 Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 
-/**********************************************************************
- * ADC converter service.
- */
-//ADC *adc = new ADC();
+
 
 /**********************************************************************
  * State machine definitions
@@ -344,6 +346,7 @@ void processSensors() {
       }
     }
     deadline = (now + SENSOR_PROCESS_INTERVAL);
+    SID++;
   }
 }
 
@@ -465,9 +468,8 @@ void processMachineState() {
  */
 
 void transmitPgn130316(Sensor sensor) {
-  static unsigned char sid = 0;
   tN2kMsg N2kMsg;
-  SetN2kPGN130316(N2kMsg, sid++, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
+  SetN2kPGN130316(N2kMsg, SID, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
   NMEA2000.SendMsg(N2kMsg);
   LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
 }  
