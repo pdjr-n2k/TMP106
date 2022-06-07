@@ -999,9 +999,7 @@ F 3 "~" H 9350 3500 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	7900 3500 8200 3500
-Wire Wire Line
-	7900 3100 8200 3100
+	7900 3100 8000 3100
 Connection ~ 9350 3100
 Wire Wire Line
 	9350 3100 9450 3100
@@ -1012,4 +1010,27 @@ Wire Wire Line
 	9750 3100 10400 3100
 Wire Wire Line
 	900  4100 900  4550
+$Comp
+L Device:CP C5
+U 1 1 629FD333
+P 8000 3300
+F 0 "C5" H 8118 3346 50  0000 L CNN
+F 1 "1000uF" H 8000 3200 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D8.0mm_P5.00mm" H 8038 3150 50  0001 C CNN
+F 3 "~" H 8000 3300 50  0001 C CNN
+	1    8000 3300
+	1    0    0    -1  
+$EndComp
+Connection ~ 8000 3100
+Wire Wire Line
+	7900 3500 8000 3500
+Wire Wire Line
+	8000 3150 8000 3100
+Wire Wire Line
+	8000 3100 8200 3100
+Wire Wire Line
+	8000 3450 8000 3500
+Connection ~ 8000 3500
+Wire Wire Line
+	8000 3500 8200 3500
 $EndSCHEMATC
