@@ -23,10 +23,7 @@
 /**********************************************************************
  * SERIAL DEBUG
  * 
- * Define DEBUG_SERIAL to enable serial output and arrange for the
- * function debugDump() to be called from loop() every
- * DEBUG_SERIAL_INTERVAL ms. DEBUG_SERIAL_START_DELAY prevents data
- * being written to the serial port immediately after system boot.
+ * Define DEBUG_SERIAL to enable debug messages on serial output.
  */
 
 #define DEBUG_SERIAL
@@ -388,30 +385,54 @@ void processMachineState() {
     case NORMAL:
       break;
     case PRG_START:
+      #ifdef DEBUG_SERIAL
+      Serial.print("PRG_START: starting to programme sensor ");
+      #endif
       if (DIL_SWITCH.selectedSwitch()) {
         selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
         MACHINE_RESET_TIMER = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+        #ifdef DEBUG_SERIAL
+        Serial.println(selectedSensorIndex + 1);
+        #endif
       } else {
         MACHINE_STATE = NORMAL;
         MACHINE_RESET_TIMER = 0UL;
       }
       break;
     case PRG_ACCEPT_INSTANCE:
+      #ifdef DEBUG_SERIAL
+      Serial.print("PRG_ACCEPT_INSTANCE: assigning instance ");
+      #endif
       SENSORS[selectedSensorIndex].setInstance(DIL_SWITCH.value());
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
       MACHINE_RESET_TIMER = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+      #ifdef DEBUG_SERIAL
+      Serial.println(SENSORS[selectedSensorIndex].getInstance());
+      #endif
       break;
     case PRG_ACCEPT_SOURCE:
+      #ifdef DEBUG_SERIAL
+      Serial.print("PRG_ACCEPT_SOURCE: assigning source ");
+      #endif
       SENSORS[selectedSensorIndex].setSource(DIL_SWITCH.value());
       LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, -1);
       MACHINE_RESET_TIMER = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+      #ifdef DEBUG_SERIAL
+      Serial.println(SENSORS[selectedSensorIndex].getSource());
+      #endif
       break;
     case PRG_ACCEPT_SETPOINT:
+      #ifdef DEBUG_SERIAL
+      Serial.print("PRG_ACCEPT_SETPOINT: assigning set point ");
+      #endif
       SENSORS[selectedSensorIndex].setSetPoint((double) (DIL_SWITCH.value() + 173));
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
+      #ifdef DEBUG_SERIAL
+      Serial.println(SENSORS[selectedSensorIndex].getSetPoint());
+      #endif
     case PRG_FINALISE:
       // Save in-memory configuration to EEPROM, flash LEDs to confirm
       // programming and return to normal operation.
@@ -440,7 +461,7 @@ void processMachineState() {
       break;
   }
   #ifdef DEBUG_SERIAL
-    Serial.print("Operating configuration: "); dumpSensorConfiguration();
+    dumpSensorConfiguration();
   #endif
 }
 
@@ -478,26 +499,19 @@ void messageHandler(const tN2kMsg &N2kMsg) {
   }
 }
 
-#ifdef DEBUG_SERIAL
-void debugDump() {
-  static unsigned long deadline = 0UL;
-  unsigned long now = millis();
-  if (now > deadline) {
-    deadline = (now + DEBUG_SERIAL_INTERVAL);
-  }
-}
-
 void dumpSensorConfiguration() {
+  Serial.println();
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
-    Serial.print("Sensor "); Serial.print(i); Serial.print(": ");
+    Serial.println();
+    Serial.print("Sensor "); Serial.print(i); Serial.print(" ");
+    Serial.print("(gpio "); Serial.print(SENSORS[i].getGpio()); Serial.print("): ");
     if (SENSORS[i].getInstance() == 0xFF) {
-      Serial.println("disabled");
+      Serial.print("disabled");
     } else {
-      Serial.print("\"instance\": "); Serial.print(SENSORS[i].getInstance()); Serial.print(",");
-      Serial.print("\"source\": "); Serial.print(SENSORS[i].getSource()); Serial.print(",");
-      Serial.print("\"setPoint\": "); Serial.print(SENSORS[i].getSetPoint());
-      Serial.println("}");
+      Serial.print("source: "); Serial.print(SENSORS[i].getSource()); Serial.print(", ");
+      Serial.print("instance: "); Serial.print(SENSORS[i].getInstance()); Serial.print(", ");
+      Serial.print("setPoint: "); Serial.print(SENSORS[i].getSetPoint());
     }
   }
+  Serial.println();
 }
-#endif
