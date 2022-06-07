@@ -1,5 +1,5 @@
 /**********************************************************************
- * TMP108.cpp - firmware for 8-channel N2K temperature sensor module.
+ * tsense-1.0.0.cpp - TSENSE firmware version 1.0.0.
  * Copyright (c) 2021 Paul Reeve, <preeve@pdjr.eu>
  *
  * This firmware provides an 8-channel temperature senor interface
@@ -7,10 +7,6 @@
  * Temperature, Extended Range.
  * 
  * The firmware supports LM335Z sensors.
- *
- * Version history:
- * 1.0		21/03		Test prototype.
- * 1.1		22/06		First production release.
  */
 
 #include <Arduino.h>
@@ -68,7 +64,6 @@
 #define GPIO_ENCODER_BIT1 11
 #define GPIO_ENCODER_BIT0 12
 #define GPIO_BOARD_LED 13
-// Start of analogue pins - AX addresses are defined by the ADC library.
 #define GPIO_SENSOR0 A0
 #define GPIO_SENSOR1 A1
 #define GPIO_SENSOR2 A2
@@ -77,7 +72,6 @@
 #define GPIO_SENSOR5 A5
 #define GPIO_SENSOR6 A6
 #define GPIO_SENSOR7 A7
-// End of analogue pins
 #define GPIO_PROGRAMME_SWITCH 22
 #define GPIO_POWER_LED 23
 #define GPIO_SENSOR_PINS { GPIO_SENSOR0, GPIO_SENSOR1, GPIO_SENSOR2, GPIO_SENSOR3, GPIO_SENSOR4, GPIO_SENSOR5, GPIO_SENSOR6, GPIO_SENSOR7 } 
@@ -125,8 +119,8 @@
 #define PRODUCT_LEN 1
 #define PRODUCT_N2K_VERSION 2101
 #define PRODUCT_SERIAL_CODE "002-849" // PRODUCT_CODE + DEVICE_UNIQUE_NUMBER
-#define PRODUCT_TYPE "TMP108"
-#define PRODUCT_VERSION "1.1 (Jun 2022)"
+#define PRODUCT_TYPE "TSENSE"
+#define PRODUCT_VERSION "1.0 (Mar 2021)"
 
 /**********************************************************************
  * Include the build.h header file which can be used to override any or
@@ -142,13 +136,14 @@
 #define LED_MANAGER_HEARTBEAT 300         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
-#define SENSOR_PROCESS_INTERVAL 2000      // Number of ms between sensor processing
+#define SENSOR_PROCESS_INTERVAL 250       // Number of ms between N2K transmits / 8
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
 
 /**********************************************************************
  * Declarations of local functions.
  */
 #ifdef DEBUG_SERIAL
+void debugDump();
 void dumpSensorConfiguration();
 #endif
 void messageHandler(const tN2kMsg&);
@@ -177,11 +172,6 @@ typedef struct { unsigned long PGN; void (*Handler)(const tN2kMsg &N2kMsg); } tN
 tNMEA2000Handler NMEA2000Handlers[]={ {0, 0} };
 
 /**********************************************************************
- * SID transmission counter
- */
-unsigned char SID = 0;
-
-/**********************************************************************
  * DIL_SWITCH switch decoder.
  */
 int ENCODER_PINS[] = GPIO_ENCODER_PINS;
@@ -204,13 +194,11 @@ LedManager LED_MANAGER (LED_MANAGER_HEARTBEAT, LED_MANAGER_INTERVAL);
 unsigned char SENSOR_PINS[] = GPIO_SENSOR_PINS;
 Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 
-
-
 /**********************************************************************
  * State machine definitions
  */
 enum MACHINE_STATES { NORMAL, PRG_START, PRG_ACCEPT_INSTANCE, PRG_ACCEPT_SOURCE, PRG_ACCEPT_SETPOINT, PRG_FINALISE, PRG_CANCEL };
-static MACHINE_STATES MACHINE_STATE = PRG_CANCEL;
+static MACHINE_STATES MACHINE_STATE = NORMAL;
 unsigned long MACHINE_RESET_TIMER = 0UL;
 
 /**********************************************************************
@@ -222,15 +210,14 @@ void setup() {
   delay(DEBUG_SERIAL_START_DELAY);
   #endif
 
-  // Set the mode of all GPIO pins.
+  // Set the mode of all digital GPIO pins.
   int ipins[] = GPIO_INPUT_PINS;
   int opins[] = GPIO_OUTPUT_PINS;
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(ipins); i++) pinMode(ipins[i], INPUT_PULLUP);
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(opins); i++) pinMode(opins[i], OUTPUT);
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(SENSOR_PINS); i++) pinMode(SENSOR_PINS[i], INPUT);
-  
-  // Initialise SENSORS array (and assign GPIO addresses)
-  for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) SENSORS[i].invalidate(SENSOR_PINS[i]);
+  // Initialise SENSORS array.
+  for (unsigned int i = 0; i < ELEMENTCOUNT(SENSOR_PINS); i++) SENSORS[i].invalidate(SENSOR_PINS[i]); 
   
   // We assume that a new host system has its EEPROM initialised to all
   // 0xFF. We test by reading a byte that in a configured system should
@@ -309,7 +296,7 @@ void loop() {
 
   // If the device isn't currently being programmed, then process
   // temperature sensors and transmit readings on N2K. 
-  if (MACHINE_STATE == NORMAL) processSensors();
+  if ((!JUST_STARTED) && (MACHINE_STATE == NORMAL)) processSensors();
 
   // Update the states of connected LEDs
   LED_MANAGER.loop();
@@ -327,26 +314,21 @@ void loop() {
 void processSensors() {
   static unsigned long deadline = 0UL;
   unsigned long now = millis();
-  
+  static unsigned int sensor = 0;
+
   if (now > deadline) {
-    for (unsigned int sensorIndex = 0; sensorIndex < ELEMENTCOUNT(SENSORS); sensorIndex++) {
-      if (SENSORS[sensorIndex].getInstance() != 0xff) {
-        #ifdef DEBUG_SERIAL
-        Serial.println();
-        Serial.print("Sensor "); Serial.print(sensorIndex);
-        Serial.print(": gpio = "); Serial.print(SENSORS[sensorIndex].getGpio());
-        #endif
-        int value = analogRead(SENSORS[sensorIndex].getGpio());
-        double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / 1024) * 100;
-        SENSORS[sensorIndex].setTemperature(kelvin);
-        #ifdef DEBUG_SERIAL
-        Serial.print(", temperature = "); Serial.print(kelvin - 273.0); Serial.print("C ");
-        #endif
-        transmitPgn130316(SENSORS[sensorIndex]); 
-      }
+    if (SENSORS[sensor].getInstance() != 0xff) {
+      int value = analogRead(SENSORS[sensor].getGpio());
+      double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / 1024) * 100;
+      SENSORS[sensor].setTemperature(kelvin);
+      #ifdef DEBUG_SERIAL
+      Serial.print("Sensor "); Serial.print(sensor); Serial.print(": ");
+      Serial.print(kelvin - 273.0); Serial.println ("C ");
+      #endif
+      transmitPgn130316(SENSORS[sensor]); 
     }
+    sensor = ((sensor + 1) % ELEMENTCOUNT(SENSORS));
     deadline = (now + SENSOR_PROCESS_INTERVAL);
-    SID++;
   }
 }
 
@@ -468,8 +450,9 @@ void processMachineState() {
  */
 
 void transmitPgn130316(Sensor sensor) {
+  static unsigned char sid = 0;
   tN2kMsg N2kMsg;
-  SetN2kPGN130316(N2kMsg, SID, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
+  SetN2kPGN130316(N2kMsg, sid++, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
   NMEA2000.SendMsg(N2kMsg);
   LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
 }  
@@ -495,18 +478,26 @@ void messageHandler(const tN2kMsg &N2kMsg) {
   }
 }
 
+#ifdef DEBUG_SERIAL
+void debugDump() {
+  static unsigned long deadline = 0UL;
+  unsigned long now = millis();
+  if (now > deadline) {
+    deadline = (now + DEBUG_SERIAL_INTERVAL);
+  }
+}
+
 void dumpSensorConfiguration() {
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
-    Serial.println();
     Serial.print("Sensor "); Serial.print(i); Serial.print(": ");
-    Serial.print("GPIO: "); Serial.print(SENSORS[i].getGpio()); Serial.print(", ");
     if (SENSORS[i].getInstance() == 0xFF) {
-      Serial.print("disabled");
+      Serial.println("disabled");
     } else {
-      Serial.print("instance: "); Serial.print(SENSORS[i].getInstance()); Serial.print(", ");
-      Serial.print("source: "); Serial.print(SENSORS[i].getSource()); Serial.print(", ");
-      Serial.print("setPoint: "); Serial.print(SENSORS[i].getSetPoint());
+      Serial.print("\"instance\": "); Serial.print(SENSORS[i].getInstance()); Serial.print(",");
+      Serial.print("\"source\": "); Serial.print(SENSORS[i].getSource()); Serial.print(",");
+      Serial.print("\"setPoint\": "); Serial.print(SENSORS[i].getSetPoint());
+      Serial.println("}");
     }
   }
-  Serial.println();
 }
+#endif
