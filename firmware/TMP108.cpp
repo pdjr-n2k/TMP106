@@ -133,7 +133,7 @@
 #define LED_MANAGER_HEARTBEAT 300         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
-#define SENSOR_PROCESS_INTERVAL 250       // Number of ms between N2K transmits / 8
+#define SENSOR_PROCESS_INTERVAL 5000      // Number of ms between N2K transmits / 8
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
 
 /**********************************************************************
@@ -311,20 +311,21 @@ void loop() {
 void processSensors() {
   static unsigned long deadline = 0UL;
   unsigned long now = millis();
-  static unsigned int sensor = 0;
 
   if (now > deadline) {
-    if (SENSORS[sensor].getInstance() != 0xff) {
-      int value = analogRead(SENSORS[sensor].getGpio());
-      double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / 1024) * 100;
-      SENSORS[sensor].setTemperature(kelvin);
-      #ifdef DEBUG_SERIAL
-      Serial.print("Sensor "); Serial.print(sensor); Serial.print(": ");
-      Serial.print(kelvin - 273.0); Serial.println ("C ");
-      #endif
-      transmitPgn130316(SENSORS[sensor]); 
+    for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
+      if (SENSORS[sensor].getInstance() != 0xff) {
+        int value = analogRead(SENSORS[sensor].getGpio());
+        double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / 1024) * 100;
+        SENSORS[sensor].setTemperature(kelvin);
+        #ifdef DEBUG_SERIAL
+        Serial.println();
+        Serial.print("Sensor "); Serial.print(sensor + 1); Serial.print(": ");
+        Serial.print(kelvin - 273.0); Serial.print("C ");
+        #endif
+        transmitPgn130316(SENSORS[sensor]); 
+      }
     }
-    sensor = ((sensor + 1) % ELEMENTCOUNT(SENSORS));
     deadline = (now + SENSOR_PROCESS_INTERVAL);
   }
 }
@@ -503,7 +504,7 @@ void dumpSensorConfiguration() {
   Serial.println();
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
     Serial.println();
-    Serial.print("Sensor "); Serial.print(i); Serial.print(" ");
+    Serial.print("Sensor "); Serial.print(i + 1); Serial.print(" ");
     Serial.print("(gpio "); Serial.print(SENSORS[i].getGpio()); Serial.print("): ");
     if (SENSORS[i].getInstance() == 0xFF) {
       Serial.print("disabled");
