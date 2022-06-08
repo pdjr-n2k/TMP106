@@ -145,7 +145,7 @@
 void dumpSensorConfiguration();
 #endif
 void messageHandler(const tN2kMsg&);
-void processMachineState();
+void processProgrammeSwitchMaybe();
 void processSensors();
 bool processSwitches();
 bool revertMachineStateMaybe();
@@ -283,12 +283,16 @@ void loop() {
   // changes to MACHINE_STATE by reading the current value of DIL_SWITCH
   // and calling processMachineState(). Changes to MACHINE_STATE are
   // only made by processSwitches() and revertMachineStateMaybe(), both
-  // of which return true if the make a change.
+  // of which return true if they make a change.
   if (!JUST_STARTED) {
-    if (processSwitches() || revertMachineStateMaybe()) { DIL_SWITCH.sample(); processMachineState(); }
+    if (processProgrammeSwitchMaybe() || revertMachineStateMaybe()) {
+      DIL_SWITCH.sample();
+      processMachineState();
+    }
   }
 
-  // Process any received messages.
+  // Before we transmit anything, let's do the NMEA housekeeping and
+  // process any received messages.
   NMEA2000.ParseMessages();
   // The above call may have resulted in acquisition of a new source
   // address, so we check if there has been a change and if so save the
@@ -345,7 +349,7 @@ void processSensors() {
  * from DEBOUNCER and if the switch is depressed the value of
  * MACHINE_STATE will be advanced and the function will return true.
  */
-boolean processSwitches() {
+boolean processProgrammeSwitchMaybe() {
   static unsigned long deadline = 0UL;
   unsigned long now = millis();
   unsigned retval = false;
@@ -444,7 +448,8 @@ void processMachineState() {
       // Save in-memory configuration to EEPROM, flash LEDs to confirm
       // programming and return to normal operation.
       #ifdef DEBUG_SERIAL
-      Serial.println("PRG_FINALISE: finalising programme and saving configuration");
+      Serial.println("PRG_FINALISE: saving new configuration");
+      dumpSensorConfiguration();
       #endif
       SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
       MACHINE_STATE = NORMAL;
@@ -457,7 +462,8 @@ void processMachineState() {
       // Restore in-memory configuration from EEPROM and return to
       // normal operation.
       #ifdef DEBUG_SERIAL
-      Serial.println("PRG_CANCEL: cancelling programme mode and restoring configuration");
+      Serial.println("PRG_CANCEL: discarding changes, restoring previous configuration");
+      dumpSensorConfiguration();
       #endif
       SENSORS[selectedSensorIndex].load(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
       MACHINE_STATE = NORMAL;
@@ -467,22 +473,7 @@ void processMachineState() {
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0);
       break;
   }
-  #ifdef DEBUG_SERIAL
-    dumpSensorConfiguration();
-  #endif
 }
-
-
-/**********************************************************************
- * 
- */
-
-void transmitPgn130316(Sensor sensor) {
-  tN2kMsg N2kMsg;
-  SetN2kPGN130316(N2kMsg, SID, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
-  NMEA2000.SendMsg(N2kMsg);
-  LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
-}  
 
 /**********************************************************************
  * Return the integer value represented by the state of the digital
@@ -497,13 +488,30 @@ unsigned char getEncodedByte(int *pins) {
   return(retval);
 }
 
+/**********************************************************************
+ * Transmit the temperature data in <sensor> over the host NMEA bus and
+ * flash the power LED to indicate it has been done. 
+ */
+void transmitPgn130316(Sensor sensor) {
+  tN2kMsg N2kMsg;
+  SetN2kPGN130316(N2kMsg, SID, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
+  NMEA2000.SendMsg(N2kMsg);
+  LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
+}  
+
+/**********************************************************************
+ * Field an incoming NMEA message to our defined handler (there aren't
+ * any!).
+ */
 void messageHandler(const tN2kMsg &N2kMsg) {
   int iHandler;
   for (iHandler=0; NMEA2000Handlers[iHandler].PGN!=0 && !(N2kMsg.PGN==NMEA2000Handlers[iHandler].PGN); iHandler++);
-  if (NMEA2000Handlers[iHandler].PGN!=0) {
+  if (NMEA2000Handlers[iHandler].PGN != 0) {
     NMEA2000Handlers[iHandler].Handler(N2kMsg); 
   }
 }
+
+#ifdef DEBUG_SERIAL
 
 void dumpSensorConfiguration() {
   Serial.println();
@@ -521,3 +529,5 @@ void dumpSensorConfiguration() {
   }
   Serial.println();
 }
+
+#endif
