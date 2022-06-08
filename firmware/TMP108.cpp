@@ -268,9 +268,11 @@ void setup() {
 
 void loop() {
   static bool JUST_STARTED = true;
+
   if (JUST_STARTED && (millis() > STARTUP_SETTLE_PERIOD)) {
     #ifdef DEBUG_SERIAL
-    Serial.print("Starting (N2K Source address: "); Serial.print(NMEA2000.GetN2kSource()); Serial.println(")");
+    Serial.println();
+    Serial.print("Starting. N2K Source address is "); Serial.print(NMEA2000.GetN2kSource()); Serial.println();
     dumpSensorConfiguration();
     #endif
     JUST_STARTED = false;
