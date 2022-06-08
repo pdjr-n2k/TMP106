@@ -1,7 +1,7 @@
 # TMP108 - NMEA 2000 temperature sensor module
 
-This project implements both hardware and firmware designs for a module
-that interfaces up to eight
+This project implements hardware and firmware designs for a module that
+interfaces up to eight
 [National Semiconductor LM335Z](https://datasheet.octopart.com/LM335Z-NOPB-Texas-Instruments-datasheet-7836729.pdf)
 (or equivalent) temperature sensors to a host NMEA 2000 bus.
 
@@ -27,19 +27,20 @@ production use on the author's vessel.
    because it does not yet support remote configuration over the NMEA
    bus.
 
-   __TMP108__ connects to a host NMEA bus by a standard M12 5-pin circular
-   connector and is powered directly from the NMEA bus.
+   __TMP108__ connects to a host NMEA bus by a standard M12 5-pin
+   circular connector and is powered directly from the NMEA bus.
    The module has an NMEA LEN of 1.
 
-2. The module supports the LM335Z temperature sensor which is widely
-   used in industry. Packaged versions of the sensor are available from
-   marine suppliers.
+2. The module supports the widely used and inexpensive LM335Z
+   temperature sensor.
+   Packaged versions of the sensor are available from marine suppliers
+   like Victron.
 
 3. Physical configuration is accomplised through a simple, DIL switch
    based protocol which allows sensors to be added to the module by
    assignment of a temperature source code, a temperature instance and
-   a set temperature. Sensor configurations can be amended and sensors
-   deleted.
+   a set temperature.
+   Sensor configurations can be amended and sensors deleted.
 
    Support for remote configuration of the module is a work in progress.
 
