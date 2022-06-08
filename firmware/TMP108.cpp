@@ -314,7 +314,9 @@ void processSensors() {
   if (now > deadline) {
     for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
       if (SENSORS[sensor].getInstance() != 0xff) {
-        int value = analogRead(SENSORS[sensor].getGpio());
+        int v1 = analogRead(SENSORS[sensor].getGpio());
+        int v2 = analogRead(SENSORS[sensor].getGpio());
+        int value = ((v1 + v2) / 2);
         double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / 1024) * 100;
         SENSORS[sensor].setTemperature(kelvin);
         #ifdef DEBUG_SERIAL
