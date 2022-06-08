@@ -27,6 +27,10 @@ production use on the author's vessel.
    because it does not yet support remote configuration over the NMEA
    bus.
 
+   __TMP108__ connects to a host NMEA bus by a standard M12 5-pin circular
+   connector and is powered directly from the NMEA bus.
+   The module has an NMEA LEN of 1.
+
 2. The module supports the LM335Z temperature sensor which is widely
    used in industry. Packaged versions of the sensor are available from
    marine suppliers.
@@ -43,9 +47,6 @@ production use on the author's vessel.
    Additional internal LEDs provide feedback during the configuration
    protocol.
 
-__TMP108__ connects to a host NMEA bus by a standard M12 5-pin circular
-connector and is powered directly from the NMEA bus.
-The module has an NMEA LEN of 1.
 
 Am LED indicator confirms NMEA connection and module operation.
 
