@@ -1,10 +1,47 @@
 # TMP108 - NMEA 2000 temperature sensor module
 
-__TMP108__ is a module that interfaces up to eight
+This project implements both hardware and firmware designs for a module
+that interfaces up to eight
 [National Semiconductor LM335Z](https://datasheet.octopart.com/LM335Z-NOPB-Texas-Instruments-datasheet-7836729.pdf)
 (or equivalent) temperature sensors to a host NMEA 2000 bus.
+
 Readings from connected sensors are transmitted over NMEA 2000 using 
 [PGN 130316 Temperature,Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
+
+Multiple __TMP108__ modules can be installed on a single NMEA bus.
+
+## Design criteria
+
+1. Aim for 100% NMEA compliance
+2. Support the use of multiple, inexpensive, wide-range, temperature
+   sensors
+3. Support physical and logical approaches to module configuration
+4. Support physical reporting of module operational state
+
+## State of development
+
+0. A complete, functional, prototype implementation of TMP108 is in
+   production use on the author's vessel. 
+
+1. The module is NMEA functional, but not 100% NMEA compliant, mainly
+   because it does not yet support remote configuration over the NMEA
+   bus.
+
+2. The module supports the LM335Z temperature sensor which is widely
+   used in industry. Packaged versions of the sensor are available from
+   marine suppliers.
+
+3. Physical configuration is accomplised through a simple, DIL switch
+   based protocol which allows sensors to be added to the module by
+   assignment of a temperature source code, a temperature instance and
+   a set temperature. Sensor configurations can be amended and sensors
+   deleted.
+
+   Support for remote configuration of the module is a work in progress.
+
+4. The module reports its operating state through a single external LED.
+   Additional internal LEDs provide feedback during the configuration
+   protocol.
 
 __TMP108__ connects to a host NMEA bus by a standard M12 5-pin circular
 connector and is powered directly from the NMEA bus.
@@ -16,7 +53,6 @@ The module is configured by a PCB mounted DIP switch which allows entry
 of NMEA temperature source codes, instance address, and set temperature
 foreach connected sensor.
 
-Multiple __TMP108__ modules can be installed on a single NMEA bus.
 
 ## About the module
 
