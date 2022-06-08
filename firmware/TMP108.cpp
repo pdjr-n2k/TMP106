@@ -149,8 +149,6 @@ bool processSwitches();
 bool revertMachineStateMaybe();
 void transmitPgn130316(Sensor sensor);
 
-
-
 /**********************************************************************
  * PGNs of messages transmitted by this program.
  * 
@@ -196,6 +194,11 @@ Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 enum MACHINE_STATES { NORMAL, PRG_START, PRG_ACCEPT_INSTANCE, PRG_ACCEPT_SOURCE, PRG_ACCEPT_SETPOINT, PRG_FINALISE, PRG_CANCEL };
 static MACHINE_STATES MACHINE_STATE = NORMAL;
 unsigned long MACHINE_RESET_TIMER = 0UL;
+
+/**********************************************************************
+ * SID for clustering N2K messages by sensor process cycle.
+ */
+unsigned char SID = 0;
 
 /**********************************************************************
  * MAIN PROGRAM - setup()
@@ -312,11 +315,10 @@ void processSensors() {
   unsigned long now = millis();
 
   if (now > deadline) {
+    analogReadAveraging(10);
     for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
       if (SENSORS[sensor].getInstance() != 0xff) {
-        int v1 = analogRead(SENSORS[sensor].getGpio());
-        int v2 = analogRead(SENSORS[sensor].getGpio());
-        int value = ((v1 + v2) / 2);
+        int value = analogRead(SENSORS[sensor].getGpio());
         double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / 1024) * 100;
         SENSORS[sensor].setTemperature(kelvin);
         #ifdef DEBUG_SERIAL
@@ -327,6 +329,7 @@ void processSensors() {
         transmitPgn130316(SENSORS[sensor]); 
       }
     }
+    SID++;
     deadline = (now + SENSOR_PROCESS_INTERVAL);
   }
 }
@@ -473,9 +476,8 @@ void processMachineState() {
  */
 
 void transmitPgn130316(Sensor sensor) {
-  static unsigned char sid = 0;
   tN2kMsg N2kMsg;
-  SetN2kPGN130316(N2kMsg, sid++, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
+  SetN2kPGN130316(N2kMsg, SID, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
   NMEA2000.SendMsg(N2kMsg);
   LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
 }  
