@@ -130,7 +130,7 @@
 #define INSTANCE_UNDEFINED 255            // Flag value
 #define STARTUP_SETTLE_PERIOD 5000        // Wait this many ms before processing switch inputs
 #define SWITCH_PROCESS_INTERVAL 250       // Process switch inputs evety n ms
-#define LED_MANAGER_HEARTBEAT 300         // Number of ms on / off
+#define LED_MANAGER_HEARTBEAT 200         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
 #define SENSOR_PROCESS_INTERVAL 5000      // Number of ms between N2K transmits / 8
@@ -140,7 +140,6 @@
  * Declarations of local functions.
  */
 #ifdef DEBUG_SERIAL
-void debugDump();
 void dumpSensorConfiguration();
 #endif
 void messageHandler(const tN2kMsg&);
@@ -345,7 +344,6 @@ boolean processSwitches() {
   unsigned retval = false;
   if (now > deadline) {
     retval = (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0);
-    deadline = (now + SWITCH_PROCESS_INTERVAL);
     if (retval) {
       switch (MACHINE_STATE) {
         case NORMAL: MACHINE_STATE = PRG_START; break;
@@ -356,6 +354,7 @@ boolean processSwitches() {
         default: break;
       }
     }
+    deadline = (now + SWITCH_PROCESS_INTERVAL);
   }
   return(retval);
 }
