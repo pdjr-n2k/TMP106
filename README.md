@@ -20,8 +20,8 @@ Multiple __TMP108__ modules can be installed on a single NMEA bus.
 
 ## State of development
 
-0. A complete, functional, prototype implementation of TMP108 is in
-   production use on the author's vessel. 
+A complete, functional, prototype implementation of TMP108 is in
+production use on the author's vessel. 
 
 1. The module is NMEA functional, but not 100% NMEA compliant, mainly
    because it does not yet support remote configuration over the NMEA
