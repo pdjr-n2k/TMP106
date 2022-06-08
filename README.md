@@ -1,22 +1,20 @@
 # TMP108 - NMEA 2000 temperature sensor module
 
-__TMP108__ is an NMEA 2000 temperature sensor module which supports the
-connection of up to eight
+__TMP108__ is a module that interfaces up to eight
 [National Semiconductor LM335Z](https://datasheet.octopart.com/LM335Z-NOPB-Texas-Instruments-datasheet-7836729.pdf)
-(or equivalent) temperature sensors.
-The module transmits temperature readings from the connected sensors
-over NMEA 2000 using [PGN 130316 Temperature, Extended Range](
-https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
+(or equivalent) temperature sensors to a host NMEA 2000 bus.
+Readings from connected sensors are transmitted over NMEA 2000 using 
+[PGN 130316 Temperature,Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
 
 __TMP108__ connects to a host NMEA bus by a standard M12 5-pin circular
 connector and is powered directly from the NMEA bus.
 The module has an NMEA LEN of 1.
 
-Status and diagnostic LEDs confirm NMEA connection and module operating
-status.
+Am LED indicator confirms NMEA connection and module operation.
+
 The module is configured by a PCB mounted DIP switch which allows entry
-of NMEA instance address, temperature source and set temperature for
-each connected sensor.
+of NMEA temperature source codes, instance address, and set temperature
+foreach connected sensor.
 
 Multiple __TMP108__ modules can be installed on a single NMEA bus.
 
@@ -34,7 +32,7 @@ passage of sensor connection cables.
 The top cover is released by pinching at (A) after which it can be
 lifted away from the the base to expose the printed circuit board (PCB).
 The PCB has sensor wire terminals (4), a programme switch (5), a
-configuration DIL switch (6) and three configuration state LEDs (7).
+configuration DIL switch (6) and three configuration LEDs (7).
 A jumper (8) allows connection of the NMEA cable shield to the module
 ground.
 
@@ -42,35 +40,35 @@ ground.
 
 The module uses an M12, circular, female, 5-pin industrial connector
 for NMEA connection.
-Any N2K standard-compliant drop cable will allow the module to be
+An N2K standard-compliant drop cable will allow the module to be
 connected to a host NMEA bus through a T-connector.
 
 ### (2) Status LED
 
-A PWR status LED is modulated to indicate operating status.
+An externally visible LED indicates operating status.
 
 | LED    | Illumination state                | Meaning |
 |:------:|:----------------------------------|:--------|
 | PWR/TX | *n* rapid flashes on startup      | The module has just been connected to power and is initialising *n* temperature sensors.|
 |        | Steady                            | The module has power.|
-|        | Flashing                          | The module is transmitting NMEA data from a configured sensor. |
+|        | Occulting                         | The module is transmitting PGN 130316. |
 
 ### (3) Cable glands
 
-Two 6mm cable glands allow passage of switch and indicator connection
+Two cable glands allow passage of switch and indicator connection
 cables.
 
 ### (4) Sensor wire terminals
 
-Two 8-pin terminal blocks allow the connection of up to eight two-wire
-LM335Z temperature sensors, numbered 0 through 7. Each sensor requires
-a two-wire connection to its respective positive (P) and ground (G)
-pins; the LM335Z calibration pin is not used.
+Two 8-pin terminal blocks allow the connection of up to eight LM335Z
+temperature sensors, numbered 1 through 8.
+Each sensor requires a two-wire connection to its respective positive
+(P) and ground (G) pins; the LM335Z calibration pin is not used.
 
 | Terminal | Function                        |
 |:--------:|:--------------------------------|
-| [0..7]-P | Positive connection to sensor   |
-| [0..7]-G | Ground connection to sensor     |
+| [1..7]-P | Positive connection to sensor   |
+| [1..7]-G | Ground connection to sensor     |
 
 DO NOT connect resistive or milliamp temperature sensors to these
 terminal inputs.
@@ -78,22 +76,19 @@ terminal inputs.
 ### (5) Programme switch
 
 The PRG programme switch is a momentary action push button which is
-used together with DIL switch (6) to configure each connected sensor
-channel's NMEA properties.
+used together with DIL switch (6) to configure the NMEA properties of
+each connected sensor.
 
 ### (6) DIL switch
 
-The DIL switch allows the selection of a sensor channel which is to be
-programmed and the entry of binary-encoded sensor configuration data.
-The switch consists of eight small slide switches labelled one through
-eight. 
+The 8-channel DIL switch allows the selection of a sensor channel
+which is to be programmed and the entry of binary-encoded sensor
+configuration data. 
 
 ### (7) Programme state LEDs
 
-There are three LEDs labelled INST, SRCE and SETP which are used to
-indicate what data has been entered and what is required whilst a sensor
-channel is being configured.
-
+These three LEDs labelled INST, SRCE and SETP are used to provide
+feedback whilst a sensor channel is being configured.
 During normal module operation these LEDs will all be switched off.
 
 ### (8) SCR switch
@@ -104,27 +99,27 @@ ground plane.
 ## Temperature sensors
 
 The TMP108 module supports a maximum of eight LM335Z or equivalent
-temperature sensor IC.
+temperature sensor ICs.
 Other types of temperature sensor cannot be used and connecting them
 to a TMP108 module will almost certainly damage the module beyond
 repair.
 
 LM335Z-based temperature sensors are commercially available (for
-example Victron ) or you can easily make your own sensor.
+example from Victron) or you can easily make your own sensor.
 
 The LM335Z sensor IC is packaged in a TO-92 housing and has the
 following pin layout.
 
 Pin 1 - calibrate (not used by TMP108)
-Pin 2 - ground (G)
-Pin 3 - supply (P)
+Pin 2 - supply (P)
+Pin 3 - ground (G)
 
 ### Making a bolt-on temperature sensor
 
 You will require an LM335Z IC, a length of two-core cable with 0.5mm2
-conductors, a 10mm2 ring terminal with a hole size that suits your
-mounting needs and a minimum 10mm2 cable capacity and some silicone
-sealer or potting compound.
+conductors, ring terminal with a hole size that suits your mounting
+needs and a minimum 10mm2 cable capacity and some silicone sealer or
+potting compound.
 
 1. Remove the calibrate pin from the LM335Z by cutting or breaking it
    off as close to the IC body as possible.
