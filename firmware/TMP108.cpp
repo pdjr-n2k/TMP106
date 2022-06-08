@@ -135,6 +135,8 @@
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
 #define SENSOR_PROCESS_INTERVAL 5000      // Number of ms between N2K transmits / 8
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
+#define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to on read value
+#define ANALOG_RESOLUTION 1024            // ADC maximum return value
 
 /**********************************************************************
  * Declarations of local functions.
@@ -315,11 +317,11 @@ void processSensors() {
   unsigned long now = millis();
 
   if (now > deadline) {
-    analogReadAveraging(10);
+    analogReadAveraging(ANALOG_READ_AVAERAGE);
     for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
       if (SENSORS[sensor].getInstance() != 0xff) {
         int value = analogRead(SENSORS[sensor].getGpio());
-        double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / 1024) * 100;
+        double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / ANALOG_RESOLUTION) * 100;
         SENSORS[sensor].setTemperature(kelvin);
         #ifdef DEBUG_SERIAL
         Serial.println();
