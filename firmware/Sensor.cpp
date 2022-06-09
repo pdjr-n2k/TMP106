@@ -12,7 +12,7 @@ Sensor::Sensor() {
   this->config.instance = 0xff;           // Set default instance to undefined as per N2K
   this->config.source = 0xff;             // Set default source to undefined as per N2K
   this->config.setPoint = 0.0;            // Set default set point to minimum
-  this->config.transmissionRate = 4000UL; // Set default transmission rate to 4 seconds
+  this->config.transmissionInterval = 2000UL; // Set default transmission rate to 4 seconds
   this->temperature = 0.0;
 }
 
@@ -40,6 +40,10 @@ unsigned long Sensor::getTransmissionInterval() {
   return(this->config.transmissionInterval);
 }
 
+unsigned long Sensor::getTransmissionDeadline() {
+  return(this->config.transmissionDeadline);
+}
+
 void Sensor::setGpio(unsigned char gpio) {
   this->config.gpio = gpio;
 }
@@ -62,6 +66,10 @@ void Sensor::setTemperature(double temperature) {
 
 void Sensor::setTransmissionInterval(unsigned long transmissionInterval) {
   this->config.transmissionInterval = transmissionInterval;
+}
+
+void Sensor::setTransmissionDeadline(unsigned long transmissionDeadline) {
+  this->config.transmissionDeadline = transmissionDeadline;
 }
 
 void Sensor::invalidate(unsigned char gpio) {

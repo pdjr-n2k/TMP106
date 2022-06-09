@@ -10,7 +10,7 @@
  */
 
 #include <Arduino.h>
-#include <cppQueue.h>
+#include <ArduinoQueue.h>
 #include <EEPROM.h>
 #include <NMEA2000_CAN.h>
 #include <N2kTypes.h>
@@ -136,6 +136,7 @@
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
 #define TRANSMIT_QUEUE_PROCESS_INTERVAL 500  // Number of ms between possible N2K transmits
+#define DEFAULT_TRANSMIT_INTERVAL 2000    // Sensor transmit interval
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
 #define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to on read value
 #define ANALOG_RESOLUTION 1024            // ADC maximum return value
@@ -148,12 +149,13 @@
 void dumpSensorConfiguration();
 #endif
 void messageHandler(const tN2kMsg&);
-void processProgrammeSwitchMaybe();
+bool processProgrammeSwitchMaybe();
 void processSensors();
 bool processSwitches();
 bool revertMachineStateMaybe();
 void transmitPgn130316(Sensor sensor);
 void processTransmitQueue();
+void processMachineState();
 
 /**********************************************************************
  * PGNs of messages transmitted by this program.
@@ -206,7 +208,7 @@ unsigned long MACHINE_RESET_TIMER = 0UL;
  */
 unsigned char SID = 0;
 
-cppQueue TRANSMIT_QUEUE(sizeof(unsigned int), TRANSMIT_QUEUE_LENGTH, FIFO);
+ArduinoQueue<int> TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH);
 
 /**********************************************************************
  * MAIN PROGRAM - setup()
@@ -239,6 +241,7 @@ void setup() {
   // 0x00    | N2K source address                       | 1
   // 0x10    | Sensor configuration (the SENSORS array) | Lots
   //
+  //EEPROM.write(SOURCE_ADDRESS_EEPROM_ADDRESS, 0xff);
   if (EEPROM.read(SOURCE_ADDRESS_EEPROM_ADDRESS) == 0xff) {
     EEPROM.write(SOURCE_ADDRESS_EEPROM_ADDRESS, DEFAULT_SOURCE_ADDRESS);
     for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) SENSORS[i].save(SENSORS_EEPROM_ADDRESS + (i * SENSORS[i].getConfigSize()));
@@ -246,8 +249,6 @@ void setup() {
 
   // Load sensor configurations from EEPROM  
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) SENSORS[i].load(SENSORS_EEPROM_ADDRESS + (i * SENSORS[i].getConfigSize()));
-
-  for (unsigned int i = 0; i < ELEMENTCOUNT(SENSOR_TRANSMIT_DEADLINES); i++) SENSOR_TRANSMIT_DEADLINE[i] = 0UL;
 
   // Flash the board LED n times (where n = number of configured sensors)
   int n = 0;
@@ -331,26 +332,27 @@ void loop() {
  * the N2K bus.
  */
 void processSensors() {
-  unsigned long SENSOR_TRANSMIT_DEADLINES[ELEMENTCOUNT(SENSORS)] = SENSOR_TRANSMIT_DEADLINE_INITIALISER;
   unsigned long now = millis();
 
   for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
     if (SENSORS[sensor].getInstance() != 0xff) {
-      if (now > SENSOR_TRANSMIT_DEADLINES[sensor]) {
-        int value = analogRead(SENSORS[sensor].getGpio());
-        double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / ANALOG_RESOLUTION) * 100;
-        SENSORS[sensor].setTemperature(kelvin);
-        #ifdef DEBUG_SERIAL
-        Serial.println();
-        Serial.print("Sensor "); Serial.print(sensor + 1); Serial.print(": ");
-        Serial.print(kelvin - 273.0); Serial.print("C ");
-        #endif
-        if (!TRANSMIT_QUEUE.push(sensor)) {
+      if (now > SENSORS[sensor].getTransmissionDeadline()) {
+        if (!TRANSMIT_QUEUE.isFull()) {
+          int value = analogRead(SENSORS[sensor].getGpio());
+          double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / ANALOG_RESOLUTION) * 100;
+          SENSORS[sensor].setTemperature(kelvin);
           #ifdef DEBUG_SERIAL
-          Serial.println("ERROR: transmit queue is full")
+          Serial.println();
+          Serial.print("Queueing reading for sensor "); Serial.print(sensor + 1); Serial.print(": ");
+          Serial.print(kelvin - 273.0); Serial.print("C ");
+          #endif
+          TRANSMIT_QUEUE.enqueue(sensor);
+        } else {
+          #ifdef DEBUG_SERIAL
+          Serial.println("ERROR: cannot queue sensor reading; transmit queue is full");
           #endif
         } 
-        SENSOR_TRANSMIT_DEADLINES[SENSOR] = now + SENSORS[sensor].getTransmissionInterval();
+        SENSORS[sensor].setTransmissionDeadline(now + SENSORS[sensor].getTransmissionInterval());
       }
     }
   }
@@ -390,10 +392,14 @@ boolean processProgrammeSwitchMaybe() {
 void processTransmitQueue() {
   static unsigned long deadline = 0UL;
   unsigned long now = millis();
-  int sensorIndex;
+
   if (now > deadline) {
-    if (TRANSMIT_QUEUE.pop(&sensorIndex)) {
-      transmitPgn130316(SENSORS[sensorIndex]);
+    if (!TRANSMIT_QUEUE.isEmpty()) {
+      int sensor = TRANSMIT_QUEUE.dequeue();
+      #ifdef DEBUG_SERIAL
+      Serial.println(); Serial.print("Dequeueing and transmitting sensor "); Serial.print(sensor + 1);
+      #endif
+      transmitPgn130316(SENSORS[sensor]);
     }
     deadline = (now + TRANSMIT_QUEUE_PROCESS_INTERVAL);
   }
@@ -478,6 +484,7 @@ void processMachineState() {
       // programming and return to normal operation.
       #ifdef DEBUG_SERIAL
       Serial.println("PRG_FINALISE: saving new configuration");
+      SENSORS[selectedSensorIndex].setTransmissionInterval(DEFAULT_TRANSMIT_INTERVAL);
       dumpSensorConfiguration();
       #endif
       SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
