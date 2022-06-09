@@ -14,11 +14,15 @@ class Sensor {
     void setSource(unsigned char instance);
     void setSetPoint(double setPoint);
     void setTemperature(double temperature);
+    void setTransmissionInterval(unsigned long transmissionInterval);
+    void setTransmissionDeadline(unsigned long transmissionDeadline);
     unsigned char getGpio();
     unsigned char getInstance();
     unsigned char getSource();
     double getSetPoint();
     double getTemperature();
+    unsigned long getTransmissionInterval();
+    unsigned long getTransmissionDeadline();
     void invalidate(unsigned char gpio);
     void save(int eepromAddress);
     void load(int eepromAddress);
@@ -29,6 +33,8 @@ class Sensor {
       unsigned char instance;
       unsigned char source;
       double setPoint;
+      unsigned long transmissionInterval;
+      unsigned long transmissionDeadline;
     };
     struct Sensor::Configuration config;
     double temperature;
