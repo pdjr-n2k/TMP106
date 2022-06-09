@@ -135,12 +135,31 @@
 #define LED_MANAGER_HEARTBEAT 200         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
-#define TRANSMIT_QUEUE_PROCESS_INTERVAL 500  // Number of ms between possible N2K transmits
-#define DEFAULT_TRANSMIT_INTERVAL 2000    // Sensor transmit interval
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
 #define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to on read value
 #define ANALOG_RESOLUTION 1024            // ADC maximum return value
 #define TRANSMIT_QUEUE_LENGTH 20          // Max number of entries in the transmit queue
+
+/**********************************************************************
+ * NMEA transmit configuration. Modules that transmit PGN 130316 are
+ * required to honour a 0.5s cycle limit - this means that the max rate
+ * at which the module can transmit PGN 130316 is once every 500ms. At
+ * the same time, the maximum transmit rate for a single sensor
+ * instance is once every 2 seconds. These values are defined below as
+ * defaults.
+ * 
+ * However, this module has 8 sensors. If every sensor attempts to
+ * transmit at this maximum rate, then the 8 messages will hit the
+ * output buffer every two seconds whilst only four messages can
+ * actually be transmitted.
+ * 
+ * Make sure that when you configure sensor channels you choose an
+ * appropriate transmit interval so that buffer overrun does not
+ * become an issue.
+ */
+ 
+#define DEFAULT_TRANSMIT_INTERVAL 2000    // Default sensor transmit interval (the N2K minimum for this PGN)
+#define MINIMUM_TRANSMIT_CYCLE 500        // Number of ms between possible N2K transmits - the N2K "cycle" time for this PGN
 
 /**********************************************************************
  * Declarations of local functions.
