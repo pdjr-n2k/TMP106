@@ -10,6 +10,7 @@
  */
 
 #include <Arduino.h>
+#include <cppQueue.h>
 #include <EEPROM.h>
 #include <NMEA2000_CAN.h>
 #include <N2kTypes.h>
@@ -75,6 +76,7 @@
 #define GPIO_ENCODER_PINS { GPIO_ENCODER_BIT0, GPIO_ENCODER_BIT1, GPIO_ENCODER_BIT2, GPIO_ENCODER_BIT3, GPIO_ENCODER_BIT4, GPIO_ENCODER_BIT5, GPIO_ENCODER_BIT6, GPIO_ENCODER_BIT7 }
 #define GPIO_INPUT_PINS { GPIO_PROGRAMME_SWITCH, GPIO_ENCODER_BIT0, GPIO_ENCODER_BIT1, GPIO_ENCODER_BIT2, GPIO_ENCODER_BIT3, GPIO_ENCODER_BIT4, GPIO_ENCODER_BIT5, GPIO_ENCODER_BIT6, GPIO_ENCODER_BIT7 }
 #define GPIO_OUTPUT_PINS { GPIO_BOARD_LED, GPIO_POWER_LED, GPIO_INSTANCE_LED, GPIO_SOURCE_LED, GPIO_SETPOINT_LED }
+#define SENSOR_TRANSMIT_DEADLINE_INITIALISER { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL }
 
 /**********************************************************************
  * DEVICE INFORMATION
@@ -133,10 +135,11 @@
 #define LED_MANAGER_HEARTBEAT 200         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
-#define SENSOR_PROCESS_INTERVAL 5000      // Number of ms between N2K transmits / 8
+#define TRANSMIT_QUEUE_PROCESS_INTERVAL 500  // Number of ms between possible N2K transmits
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
 #define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to on read value
 #define ANALOG_RESOLUTION 1024            // ADC maximum return value
+#define TRANSMIT_QUEUE_LENGTH 20          // Max number of entries in the transmit queue
 
 /**********************************************************************
  * Declarations of local functions.
@@ -150,6 +153,7 @@ void processSensors();
 bool processSwitches();
 bool revertMachineStateMaybe();
 void transmitPgn130316(Sensor sensor);
+void processTransmitQueue();
 
 /**********************************************************************
  * PGNs of messages transmitted by this program.
@@ -202,6 +206,8 @@ unsigned long MACHINE_RESET_TIMER = 0UL;
  */
 unsigned char SID = 0;
 
+cppQueue TRANSMIT_QUEUE(sizeof(unsigned int), TRANSMIT_QUEUE_LENGTH, FIFO);
+
 /**********************************************************************
  * MAIN PROGRAM - setup()
  */
@@ -217,6 +223,9 @@ void setup() {
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(ipins); i++) pinMode(ipins[i], INPUT_PULLUP);
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(opins); i++) pinMode(opins[i], OUTPUT);
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(SENSOR_PINS); i++) pinMode(SENSOR_PINS[i], INPUT);
+
+  analogReadAveraging(ANALOG_READ_AVAERAGE);
+
   // Initialise SENSORS array.
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSOR_PINS); i++) SENSORS[i].invalidate(SENSOR_PINS[i]); 
   
@@ -237,6 +246,8 @@ void setup() {
 
   // Load sensor configurations from EEPROM  
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) SENSORS[i].load(SENSORS_EEPROM_ADDRESS + (i * SENSORS[i].getConfigSize()));
+
+  for (unsigned int i = 0; i < ELEMENTCOUNT(SENSOR_TRANSMIT_DEADLINES); i++) SENSOR_TRANSMIT_DEADLINE[i] = 0UL;
 
   // Flash the board LED n times (where n = number of configured sensors)
   int n = 0;
@@ -303,7 +314,10 @@ void loop() {
 
   // If the device isn't currently being programmed, then process
   // temperature sensors and transmit readings on N2K. 
-  if ((!JUST_STARTED) && (MACHINE_STATE == NORMAL)) processSensors();
+  if ((!JUST_STARTED) && (MACHINE_STATE == NORMAL)) {
+    processSensors();
+    processTransmitQueue();
+  }
 
   // Update the states of connected LEDs
   LED_MANAGER.loop();
@@ -311,21 +325,18 @@ void loop() {
 
 /**********************************************************************
  * processSensors() should be called directly from loop(). The function
- * uses a simple elapse timer to ensure that processing is only invoked
- * once every SENSOR_PROCESS_INTERVAL milliseconds.
- * 
- * The function will then iterate over the SENSORS array, reading the
- * temperature reported by each configured termperature sensor and
- * transmitting it onto the N2K bus.
+ * iterates through all sonsors. If it finds an enabled sensor whose
+ * transmission interval has expired then it updates  the sensor
+ * temperature from the ADC and queues the sensor for transmission on
+ * the N2K bus.
  */
 void processSensors() {
-  static unsigned long deadline = 0UL;
+  unsigned long SENSOR_TRANSMIT_DEADLINES[ELEMENTCOUNT(SENSORS)] = SENSOR_TRANSMIT_DEADLINE_INITIALISER;
   unsigned long now = millis();
 
-  if (now > deadline) {
-    analogReadAveraging(ANALOG_READ_AVAERAGE);
-    for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
-      if (SENSORS[sensor].getInstance() != 0xff) {
+  for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
+    if (SENSORS[sensor].getInstance() != 0xff) {
+      if (now > SENSOR_TRANSMIT_DEADLINES[sensor]) {
         int value = analogRead(SENSORS[sensor].getGpio());
         double kelvin = ((value * SENSOR_VOLTS_TO_KELVIN) / ANALOG_RESOLUTION) * 100;
         SENSORS[sensor].setTemperature(kelvin);
@@ -334,12 +345,16 @@ void processSensors() {
         Serial.print("Sensor "); Serial.print(sensor + 1); Serial.print(": ");
         Serial.print(kelvin - 273.0); Serial.print("C ");
         #endif
-        transmitPgn130316(SENSORS[sensor]); 
+        if (!TRANSMIT_QUEUE.push(sensor)) {
+          #ifdef DEBUG_SERIAL
+          Serial.println("ERROR: transmit queue is full")
+          #endif
+        } 
+        SENSOR_TRANSMIT_DEADLINES[SENSOR] = now + SENSORS[sensor].getTransmissionInterval();
       }
     }
-    SID++;
-    deadline = (now + SENSOR_PROCESS_INTERVAL);
   }
+  SID++;
 }
 
 /**********************************************************************
@@ -370,6 +385,18 @@ boolean processProgrammeSwitchMaybe() {
     deadline = (now + SWITCH_PROCESS_INTERVAL);
   }
   return(retval);
+}
+
+void processTransmitQueue() {
+  static unsigned long deadline = 0UL;
+  unsigned long now = millis();
+  int sensorIndex;
+  if (now > deadline) {
+    if (TRANSMIT_QUEUE.pop(&sensorIndex)) {
+      transmitPgn130316(SENSORS[sensorIndex]);
+    }
+    deadline = (now + TRANSMIT_QUEUE_PROCESS_INTERVAL);
+  }
 }
 
 /**********************************************************************
