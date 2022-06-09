@@ -199,7 +199,7 @@ Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 /**********************************************************************
  * State machine definitions
  */
-enum MACHINE_STATES { NORMAL, PRG_START, PRG_ACCEPT_INSTANCE, PRG_ACCEPT_SOURCE, PRG_ACCEPT_SETPOINT, PRG_FINALISE, PRG_CANCEL };
+enum MACHINE_STATES { NORMAL, PRG_START, PRG_ACCEPT_INSTANCE, PRG_ACCEPT_SOURCE, PRG_ACCEPT_SETPOINT, PRG_ACCEPT_INTERVAL, PRG_FINALISE, PRG_CANCEL };
 static MACHINE_STATES MACHINE_STATE = NORMAL;
 unsigned long MACHINE_RESET_TIMER = 0UL;
 
@@ -380,7 +380,8 @@ boolean processProgrammeSwitchMaybe() {
         case PRG_START: MACHINE_STATE = PRG_ACCEPT_INSTANCE; break;
         case PRG_ACCEPT_INSTANCE: MACHINE_STATE = PRG_ACCEPT_SOURCE; break;
         case PRG_ACCEPT_SOURCE: MACHINE_STATE = PRG_ACCEPT_SETPOINT; break;
-        case PRG_ACCEPT_SETPOINT: MACHINE_STATE = PRG_FINALISE; break;
+        case PRG_ACCEPT_SETPOINT: MACHINE_STATE = PRG_ACCEPT_INTERVAL; break;
+        case PRG_ACCEPT_INTERVAL: MACHINE_STATE = PRG_FINALISE; break;
         default: break;
       }
     }
@@ -480,9 +481,20 @@ void processMachineState() {
       Serial.print("PRG_ACCEPT_SETPOINT: assigning set point ");
       #endif
       SENSORS[selectedSensorIndex].setSetPoint((double) (DIL_SWITCH.value() + 173));
-      LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
+      LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
+      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
+      MACHINE_RESET_TIMER = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
       #ifdef DEBUG_SERIAL
       Serial.println(SENSORS[selectedSensorIndex].getSetPoint());
+      #endif
+      break;
+    case PRG_ACCEPT_INTERVAL:
+      #ifdef DEBUG_SERIAL
+      Serial.print("PRG_ACCEPT_INTERVAL: assigning transmission interval ");
+      #endif
+      SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (DIL_SWITCH.value() * 1000UL));
+      #ifdef DEBUG_SERIAL
+      Serial.println(SENSORS[selectedSensorIndex].getTransmissionInterval());
       #endif
     case PRG_FINALISE:
       // Save in-memory configuration to EEPROM, flash LEDs to confirm
