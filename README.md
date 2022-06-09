@@ -15,7 +15,7 @@ Multiple __TMP108__ modules can be installed on a single NMEA bus.
 1. Aim for 100% NMEA compliance
 2. Support the use of multiple, inexpensive, wide-range, temperature
    sensors
-3. Support physical and logical approaches to module configuration
+3. Support full field configuration.
 4. Support physical reporting of module operational state
 
 ## State of development
@@ -23,11 +23,8 @@ Multiple __TMP108__ modules can be installed on a single NMEA bus.
 A complete, functional, prototype implementation of TMP108 is in
 production use on the author's vessel. 
 
-1. The module is NMEA functional, but not 100% NMEA compliant, mainly
-   because it does not yet support remote configuration over the NMEA
-   bus.
-
-   __TMP108__ connects to a host NMEA bus by a standard M12 5-pin
+1. The module is NMEA functional.
+   It connects to a host NMEA bus by a standard M12 5-pin
    circular connector and is powered directly from the NMEA bus.
    The module has an NMEA LEN of 1.
 
@@ -36,25 +33,15 @@ production use on the author's vessel.
    Packaged versions of the sensor are available from marine suppliers
    like Victron.
 
-3. Physical configuration is accomplised through a simple, DIL switch
-   based protocol which allows sensors to be added to the module by
-   assignment of a temperature source code, a temperature instance and
-   a set temperature.
-   Sensor configurations can be amended and sensors deleted.
+3. Field configuration is accomplised through a simple, DIL switch
+   protocol which allows sensors to be added, modified and removed
+   from the module.
 
-   Support for remote configuration of the module is a work in progress.
+   Field configuration over NMEA is a work in progress.
 
 4. The module reports its operating state through a single external LED.
    Additional internal LEDs provide feedback during the configuration
    protocol.
-
-
-Am LED indicator confirms NMEA connection and module operation.
-
-The module is configured by a PCB mounted DIP switch which allows entry
-of NMEA temperature source codes, instance address, and set temperature
-foreach connected sensor.
-
 
 ## About the module
 
