@@ -411,7 +411,7 @@ boolean processProgrammeSwitchMaybe() {
 /**********************************************************************
  * processTransmitQueue() should be called directly from loop and will
  * seek to process a single item from the head of TRANSMIT_QUEUE once
- * every TRANSMIT_QUEUE_PROCESS_INTERVAL milliseconds.
+ * every MINIMUM_TRANSMIT_CYCLE milliseconds.
  */ 
 void processTransmitQueue() {
   static unsigned long deadline = 0UL;
@@ -425,7 +425,7 @@ void processTransmitQueue() {
       #endif
       transmitPgn130316(SENSORS[sensor]);
     }
-    deadline = (now + TRANSMIT_QUEUE_PROCESS_INTERVAL);
+    deadline = (now + MINIMUM_TRANSMIT_CYCLE);
   }
 }
 
@@ -574,20 +574,11 @@ void messageHandler(const tN2kMsg &N2kMsg) {
 #ifdef DEBUG_SERIAL
 
 void dumpSensorConfiguration() {
-  Serial.println();
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
     Serial.println();
-    Serial.print("Sensor "); Serial.print(i + 1); Serial.print(" ");
-    Serial.print("(gpio "); Serial.print(SENSORS[i].getGpio()); Serial.print("): ");
-    if (SENSORS[i].getInstance() == 0xFF) {
-      Serial.print("disabled");
-    } else {
-      Serial.print("source: "); Serial.print(SENSORS[i].getSource()); Serial.print(", ");
-      Serial.print("instance: "); Serial.print(SENSORS[i].getInstance()); Serial.print(", ");
-      Serial.print("setPoint: "); Serial.print(SENSORS[i].getSetPoint());
-    }
+    Serial.print("Sensor "); Serial.print(i + 1); Serial.print(": ");
+    SENSORS[i].dump(Serial);
   }
-  Serial.println();
 }
 
 #endif

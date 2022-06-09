@@ -9,24 +9,30 @@
 class Sensor {
   public:
     Sensor();
+    
     void setGpio(unsigned char gpio=0);
     void setInstance(unsigned char instance);
-    void setSource(unsigned char instance);
+    void setSource(unsigned char source);
     void setSetPoint(double setPoint);
-    void setTemperature(double temperature);
     void setTransmissionInterval(unsigned long transmissionInterval);
+    void setTemperature(double temperature);
     void setTransmissionDeadline(unsigned long transmissionDeadline);
+    
     unsigned char getGpio();
     unsigned char getInstance();
     unsigned char getSource();
+    unsigned long getTransmissionInterval();
     double getSetPoint();
     double getTemperature();
-    unsigned long getTransmissionInterval();
     unsigned long getTransmissionDeadline();
+    
     void invalidate(unsigned char gpio);
     void save(int eepromAddress);
     void load(int eepromAddress);
     int getConfigSize();
+
+    void dump(Stream &port);
+
   private:
     struct Configuration {
       unsigned char gpio;
@@ -34,10 +40,10 @@ class Sensor {
       unsigned char source;
       double setPoint;
       unsigned long transmissionInterval;
-      unsigned long transmissionDeadline;
     };
     struct Sensor::Configuration config;
     double temperature;
+    unsigned long transmissionDeadline;
 };
 
 #endif
