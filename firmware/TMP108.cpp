@@ -389,6 +389,11 @@ boolean processProgrammeSwitchMaybe() {
   return(retval);
 }
 
+/**********************************************************************
+ * processTransmitQueue() should be called directly from loop and will
+ * seek to process a single item from the head of TRANSMIT_QUEUE once
+ * every TRANSMIT_QUEUE_PROCESS_INTERVAL milliseconds.
+ */ 
 void processTransmitQueue() {
   static unsigned long deadline = 0UL;
   unsigned long now = millis();
