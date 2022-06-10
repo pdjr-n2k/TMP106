@@ -114,7 +114,7 @@
 
 #define PRODUCT_CERTIFICATION_LEVEL 1
 #define PRODUCT_CODE 002
-#define PRODUCT_FIRMWARE_VERSION "1.0.0 (Sep 2020)"
+#define PRODUCT_FIRMWARE_VERSION "1.1.0 (Jun 2022)"
 #define PRODUCT_LEN 1
 #define PRODUCT_N2K_VERSION 2101
 #define PRODUCT_SERIAL_CODE "002-849" // PRODUCT_CODE + DEVICE_UNIQUE_NUMBER
@@ -136,7 +136,7 @@
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
-#define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to on read value
+#define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to make a read value
 #define ANALOG_RESOLUTION 1024            // ADC maximum return value
 #define TRANSMIT_QUEUE_LENGTH 20          // Max number of entries in the transmit queue
 
@@ -158,8 +158,8 @@
  * become an issue.
  */
  
-#define DEFAULT_TRANSMIT_INTERVAL 2000    // Default sensor transmit interval (the N2K minimum for this PGN)
-#define MINIMUM_TRANSMIT_CYCLE 500        // Number of ms between possible N2K transmits - the N2K "cycle" time for this PGN
+#define MINIMUM_TRANSMIT_INTERVAL 2000    // N2K defined fastest allowed transmit rate for a PGN instance
+#define MINIMUM_TRANSMIT_CYCLE 500        // N2K defined fastest allowed transmit rate for this module.
 
 /**********************************************************************
  * Declarations of local functions.
@@ -173,7 +173,7 @@ void processSensors();
 bool processSwitches();
 bool revertMachineStateMaybe();
 void transmitPgn130316(Sensor sensor);
-void processTransmitQueue();
+void processTransmitQueueMaybe();
 void processMachineState();
 
 /**********************************************************************
@@ -216,17 +216,30 @@ unsigned char SENSOR_PINS[] = GPIO_SENSOR_PINS;
 Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 
 /**********************************************************************
- * State machine definitions
+ * The program operates as a state machine. At any moment in time the
+ * system is either operating normally (i.e. processing/transmitting
+ * temperature readings) or it is stepping through a user-mediated,
+ * multi-state, configuration process. The transition from normal
+ * operation into and between programming modes is triggered by
+ * sequential presses of the PRG button.
+ * 
+ * MACHINE_STATES enumerates all possible machine states.
+ * MACHINE_STATE captures the current machine state.
+ * MACHINE_STATE_RESET_INTERVAL 
  */
 enum MACHINE_STATES { NORMAL, PRG_START, PRG_ACCEPT_INSTANCE, PRG_ACCEPT_SOURCE, PRG_ACCEPT_SETPOINT, PRG_ACCEPT_INTERVAL, PRG_FINALISE, PRG_CANCEL };
 static MACHINE_STATES MACHINE_STATE = NORMAL;
-unsigned long MACHINE_RESET_TIMER = 0UL;
+unsigned long MACHINE_STATE_RESET_INTERVAL = 0UL;
 
 /**********************************************************************
  * SID for clustering N2K messages by sensor process cycle.
  */
 unsigned char SID = 0;
 
+/**********************************************************************
+ * The index number of sensor data that should be transmitted is placed
+ * in a queue for subsequent transmission.
+ */
 ArduinoQueue<int> TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH);
 
 /**********************************************************************
@@ -245,10 +258,11 @@ void setup() {
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(opins); i++) pinMode(opins[i], OUTPUT);
   for (unsigned int i = 0 ; i < ELEMENTCOUNT(SENSOR_PINS); i++) pinMode(SENSOR_PINS[i], INPUT);
 
+  // Configure the ADC.
   analogReadAveraging(ANALOG_READ_AVAERAGE);
 
-  // Initialise SENSORS array.
-  for (unsigned int i = 0; i < ELEMENTCOUNT(SENSOR_PINS); i++) SENSORS[i].invalidate(SENSOR_PINS[i]); 
+  // Initialise SENSORS array, assigning GPIO numbers.
+  for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) SENSORS[i].invalidate(SENSOR_PINS[i]); 
   
   // We assume that a new host system has its EEPROM initialised to all
   // 0xFF. We test by reading a byte that in a configured system should
@@ -336,7 +350,7 @@ void loop() {
   // temperature sensors and transmit readings on N2K. 
   if ((!JUST_STARTED) && (MACHINE_STATE == NORMAL)) {
     processSensors();
-    processTransmitQueue();
+    processTransmitQueueMaybe();
   }
 
   // Update the states of connected LEDs
@@ -346,7 +360,7 @@ void loop() {
 /**********************************************************************
  * processSensors() should be called directly from loop(). The function
  * iterates through all sonsors. If it finds an enabled sensor whose
- * transmission interval has expired then it updates  the sensor
+ * transmission interval has expired then it updates the sensor
  * temperature from the ADC and queues the sensor for transmission on
  * the N2K bus.
  */
@@ -414,7 +428,7 @@ boolean processProgrammeSwitchMaybe() {
  * seek to process a single item from the head of TRANSMIT_QUEUE once
  * every MINIMUM_TRANSMIT_CYCLE milliseconds.
  */ 
-void processTransmitQueue() {
+void processTransmitQueueMaybe() {
   static unsigned long deadline = 0UL;
   unsigned long now = millis();
 
@@ -438,7 +452,7 @@ void processTransmitQueue() {
  */
 boolean revertMachineStateMaybe() {
   boolean retval = false;
-  if ((MACHINE_RESET_TIMER != 0UL) && (millis() > MACHINE_RESET_TIMER)) {
+  if ((MACHINE_STATE_RESET_INTERVAL != 0UL) && (millis() > MACHINE_STATE_RESET_INTERVAL)) {
     MACHINE_STATE = PRG_CANCEL;
     retval = true;
   }
@@ -462,13 +476,13 @@ void processMachineState() {
       if (DIL_SWITCH.selectedSwitch()) {
         selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
-        MACHINE_RESET_TIMER = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+        MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
         #ifdef DEBUG_SERIAL
         Serial.println(selectedSensorIndex + 1);
         #endif
       } else {
         MACHINE_STATE = NORMAL;
-        MACHINE_RESET_TIMER = 0UL;
+        MACHINE_STATE_RESET_INTERVAL = 0UL;
       }
       break;
     case PRG_ACCEPT_INSTANCE:
@@ -476,12 +490,16 @@ void processMachineState() {
       Serial.print("PRG_ACCEPT_INSTANCE: assigning instance ");
       #endif
       SENSORS[selectedSensorIndex].setInstance(DIL_SWITCH.value());
-      LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
-      LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
-      MACHINE_RESET_TIMER = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
-      #ifdef DEBUG_SERIAL
-      Serial.println(SENSORS[selectedSensorIndex].getInstance());
-      #endif
+      if (DIL_SWITCH.selectedSwitch() != 0xff) {
+        LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
+        LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
+        MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+        #ifdef DEBUG_SERIAL
+        Serial.println(SENSORS[selectedSensorIndex].getInstance());
+        #endif
+      } else {
+        MACHINE_STATE = PRG_FINALISE;
+      }
       break;
     case PRG_ACCEPT_SOURCE:
       #ifdef DEBUG_SERIAL
@@ -490,7 +508,7 @@ void processMachineState() {
       SENSORS[selectedSensorIndex].setSource(DIL_SWITCH.value());
       LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, -1);
-      MACHINE_RESET_TIMER = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+      MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
       #ifdef DEBUG_SERIAL
       Serial.println(SENSORS[selectedSensorIndex].getSource());
       #endif
@@ -524,7 +542,7 @@ void processMachineState() {
       #endif
       SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
       MACHINE_STATE = NORMAL;
-      MACHINE_RESET_TIMER = 0UL;
+      MACHINE_STATE_RESET_INTERVAL = 0UL;
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 3);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 3);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
@@ -538,7 +556,7 @@ void processMachineState() {
       #endif
       SENSORS[selectedSensorIndex].load(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
       MACHINE_STATE = NORMAL;
-      MACHINE_RESET_TIMER = 0UL;
+      MACHINE_STATE_RESET_INTERVAL = 0UL;
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0);
