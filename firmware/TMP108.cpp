@@ -359,7 +359,7 @@ void loop() {
 
 /**********************************************************************
  * processSensors() should be called directly from loop(). The function
- * iterates through all sonsors. If it finds an enabled sensor whose
+ * iterates through all sensors. If it finds an enabled sensor whose
  * transmission interval has expired then it updates the sensor
  * temperature from the ADC and queues the sensor for transmission on
  * the N2K bus.
