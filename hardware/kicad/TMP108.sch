@@ -25,50 +25,6 @@ F 3 "~" H 7550 5000 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Device:R R14
-U 1 1 5F21EFF3
-P 9000 4700
-F 0 "R14" H 8950 4700 50  0000 R CNN
-F 1 "100R" V 9000 4700 39  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 8930 4700 50  0001 C CNN
-F 3 "~" H 9000 4700 50  0001 C CNN
-	1    9000 4700
-	-1   0    0    1   
-$EndComp
-$Comp
-L Device:R R13
-U 1 1 5F21F397
-P 8750 4700
-F 0 "R13" H 8950 4700 50  0000 R CNN
-F 1 "100R" V 8750 4700 39  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 8680 4700 50  0001 C CNN
-F 3 "~" H 8750 4700 50  0001 C CNN
-	1    8750 4700
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:C C4
-U 1 1 5F233FC6
-P 9000 5000
-F 0 "C4" H 8900 5000 50  0000 R CNN
-F 1 "560p" H 9000 5100 39  0000 R CNN
-F 2 "Capacitor_THT:C_Rect_L4.6mm_W3.0mm_P2.50mm_MKS02_FKP02" H 9038 4850 50  0001 C CNN
-F 3 "~" H 9000 5000 50  0001 C CNN
-	1    9000 5000
-	-1   0    0    1   
-$EndComp
-$Comp
-L Device:C C3
-U 1 1 5F2499AC
-P 8750 5000
-F 0 "C3" H 8850 5000 50  0000 L CNN
-F 1 "560p" H 8750 5100 39  0000 R CNN
-F 2 "Capacitor_THT:C_Rect_L4.6mm_W3.0mm_P2.50mm_MKS02_FKP02" H 8788 4850 50  0001 C CNN
-F 3 "~" H 8750 5000 50  0001 C CNN
-	1    8750 5000
-	-1   0    0    1   
-$EndComp
-$Comp
 L Device:R R12
 U 1 1 5F2B75CF
 P 9750 2200
@@ -151,19 +107,8 @@ Wire Wire Line
 	6050 3000 5950 3000
 NoConn ~ 4850 2800
 Wire Wire Line
-	8650 4300 8750 4300
-Wire Wire Line
-	8650 4500 9000 4500
-Wire Wire Line
-	8750 4550 8750 4300
-Wire Wire Line
-	9000 4550 9000 4500
-Wire Wire Line
 	7550 5150 8150 5150
 Connection ~ 7550 5150
-Wire Wire Line
-	8750 5150 9000 5150
-Connection ~ 8750 5150
 Wire Wire Line
 	7650 4600 7550 4600
 Wire Wire Line
@@ -206,9 +151,6 @@ Wire Wire Line
 Wire Wire Line
 	8150 4800 8150 5150
 Connection ~ 8150 4800
-Connection ~ 8150 5150
-Wire Wire Line
-	8150 5150 8750 5150
 NoConn ~ 7650 4500
 Text Label 1500 4100 0    50   ~ 0
 CAN_SCR
@@ -355,12 +297,6 @@ Text Notes 10000 2900 2    50   ~ 10
 12/5 V DC-DC CONVERTER
 Text Notes 10000 3800 2    50   ~ 10
 CAN INTERFACE
-Connection ~ 8750 4300
-Wire Wire Line
-	8750 4300 10200 4300
-Connection ~ 9000 4500
-Wire Wire Line
-	9000 4500 10300 4500
 Wire Notes Line
 	9100 2050 10450 2050
 Wire Notes Line
@@ -388,7 +324,7 @@ F 3 "" H 10450 2200 50  0001 C CNN
 $EndComp
 Text Label 4850 2700 2    50   ~ 0
 LED_PWR
-Text Label 10000 4950 2    50   ~ 0
+Text Label 10000 4950 0    50   ~ 0
 CAN_SCR
 Wire Wire Line
 	10400 3100 10400 3400
@@ -576,17 +512,6 @@ Text Label 5950 2300 0    50   ~ 0
 ADDR_6
 Text Label 5950 2400 0    50   ~ 0
 ADDR_7
-$Comp
-L Switch:SW_DIP_x01 SW2
-U 1 1 60541E2C
-P 1200 4100
-F 0 "SW2" H 1200 4250 50  0000 C CNN
-F 1 "SCR" H 1200 3950 50  0000 C CNN
-F 2 "Button_Switch_THT:SW_DIP_SPSTx01_Slide_6.7x4.1mm_W7.62mm_P2.54mm_LowProfile" H 1200 4100 50  0001 C CNN
-F 3 "~" H 1200 4100 50  0001 C CNN
-	1    1200 4100
-	1    0    0    -1  
-$EndComp
 $Comp
 L Device:R R10
 U 1 1 6057CA79
@@ -968,8 +893,8 @@ $Comp
 L pdjr:Teensy_3.2 U1
 U 1 1 60F2AB82
 P 5950 3000
-F 0 "U1" H 6500 1433 50  0000 C CNN
-F 1 "Teensy_3.2" H 6500 1524 50  0000 C CNN
+F 0 "U1" H 6100 1450 50  0000 C CNN
+F 1 "Teensy_3.2" H 6250 1550 50  0000 C CNN
 F 2 "Package_DIP:DIP-28_W15.24mm_LongPads" H 5950 3000 50  0001 C CNN
 F 3 "" H 5950 3000 50  0001 C CNN
 	1    5950 3000
@@ -1008,8 +933,6 @@ Wire Wire Line
 	9350 3500 10500 3500
 Wire Wire Line
 	9750 3100 10400 3100
-Wire Wire Line
-	900  4100 900  4550
 $Comp
 L Device:CP C5
 U 1 1 629FD333
@@ -1033,4 +956,59 @@ Wire Wire Line
 Connection ~ 8000 3500
 Wire Wire Line
 	8000 3500 8200 3500
+NoConn ~ 5400 1500
+NoConn ~ 5300 1500
+NoConn ~ 5200 1500
+$Comp
+L Device:R R13
+U 1 1 62A3BFE8
+P 9500 4650
+F 0 "R13" V 9400 4700 50  0000 R CNN
+F 1 "120R" V 9500 4650 39  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 9430 4650 50  0001 C CNN
+F 3 "~" H 9500 4650 50  0001 C CNN
+	1    9500 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Switch:SW_DIP_x02 SW2
+U 1 1 62A67242
+P 1200 4100
+F 0 "SW2" H 1200 4350 50  0000 C CNN
+F 1 "BUS" H 1200 3950 50  0000 C CNN
+F 2 "Package_DIP:DIP-4_W7.62mm_LongPads" H 1200 4100 50  0001 C CNN
+F 3 "~" H 1200 4100 50  0001 C CNN
+	1    1200 4100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	900  4100 900  4550
+Text Label 10000 4650 0    50   ~ 0
+TERM_A
+Wire Wire Line
+	10000 4650 9650 4650
+Text Label 10000 4800 0    50   ~ 0
+TERM_B
+Wire Wire Line
+	8650 4300 9250 4300
+Wire Wire Line
+	9350 4650 9250 4650
+Wire Wire Line
+	9250 4650 9250 4300
+Connection ~ 9250 4300
+Wire Wire Line
+	9250 4300 10200 4300
+Wire Wire Line
+	10000 4800 9050 4800
+Wire Wire Line
+	9050 4800 9050 4500
+Connection ~ 9050 4500
+Wire Wire Line
+	9050 4500 10300 4500
+Wire Wire Line
+	8650 4500 9050 4500
+Text Label 900  4000 2    50   ~ 0
+TERM_A
+Text Label 1500 4000 0    50   ~ 0
+TERM_B
 $EndSCHEMATC
