@@ -461,13 +461,13 @@ void processMachineState() {
     case NORMAL: // Start configuration process
       if (DIL_SWITCH.selectedSwitch()) {
         selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
+        MACHINE_STATE = PRG_ACCEPT_INSTANCE;
+        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
+        MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
         #ifdef DEBUG_SERIAL
         Serial.print("Starting channel configuration dialoge for channel ");
         Serial.println(selectedIndex + 1);
         #endif
-        MACHINE_STATE = PRG_ACCEPT_INSTANCE;
-        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
-        MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
       } else {
         #ifdef DEBUG_SERIAL
         Serial.println("Cannot start channel configuration (invalid channel selection)");
@@ -475,86 +475,90 @@ void processMachineState() {
       }
       break;
     case PRG_ACCEPT_INSTANCE:
-      var selectedInstance = DIL_SWITCH.value();
+      unsigned char selectedInstance = DIL_SWITCH.value();
       if (selectedInstance = 255) {
         SENSORS[selectedSensorIndex].setInstance(selectedInstance);
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         MACHINE_STATE = NORMAL;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
         MACHINE_STATE_RESET_INTERVAL = 0UL;
+        #ifdef DEBUG_SERIAL
+        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": deleting configuration");
+        dumpSensorConfiguration();
+        #endif
       } else if (selectedInstance < 253) {
         SENSORS[selectedSensorIndex].setInstance(selectedInstance);
         MACHINE_STATE = PRG_ACCEPT_SOURCE;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
         MACHINE_STATE_RESET_INTERVAL = 0UL;
+        #ifdef DEBUG_SERIAL
+        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature instance set to ");
+        Serial.println(SENSORS[selectedIndex].getInstance());
+        #endif
       } else {
         #ifdef DEBUG_SERIAL
         Serial.println("Rejecting invalid temperature instance");
         #endif
       }
+      break;
     case PRG_ACCEPT_SOURCE:
-      var selectedSource = DIL_SWITCH.value();
-      #ifdef DEBUG_SERIAL
-      Serial.print("PRG_ACCEPT_SOURCE: assigning source ");
-      #endif
-      SENSORS[selectedSensorIndex].setSource(DIL_SWITCH.value());
-      LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
-      LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, -1);
-      MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
-      #ifdef DEBUG_SERIAL
-      Serial.println(SENSORS[selectedSensorIndex].getSource());
-      #endif
-      break;
-    case PRG_ACCEPT_SETPOINT:
-      #ifdef DEBUG_SERIAL
-      Serial.print("PRG_ACCEPT_SETPOINT: assigning set point ");
-      #endif
-      SENSORS[selectedSensorIndex].setSetPoint((double) (DIL_SWITCH.value() + 173));
-      LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
-      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
-      #ifdef DEBUG_SERIAL
-      Serial.println(SENSORS[selectedSensorIndex].getSetPoint());
-      #endif
-      break;
-    case PRG_ACCEPT_INTERVAL:
-      #ifdef DEBUG_SERIAL
-      Serial.print("PRG_ACCEPT_INTERVAL: ");
-      #endif
-      if (DIL_SWITCH.value() >= 2) {
-        SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (DIL_SWITCH.value() * 1000UL));
-        PRG_ERROR = false;
-        MACHINE_STATE = PRG_FINALISE;
+      unsigned char selectedSource = DIL_SWITCH.value();
+      if ((selectedSource < 16) || ((selectedSource > 127) && (selectedSource < 253))) {
+        SENSORS[selectedIndex].setSource(selectedSource);
+        MACHINE_STATE = PRG_ACCEPT_SETPOINT;
+        LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
+        LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, -1);
+        MACHINE_STATE_RESET_INTERVAL = 0UL;
         #ifdef DEBUG_SERIAL
-        Serial.println(SENSORS[selectedSensorIndex].getTransmissionInterval());
+        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature source set to ");
+        Serial.println(SENSORS[selectedIndex].getSource());
         #endif
       } else {
-        PRG_ERROR = true;
         #ifdef DEBUG_SERIAL
-        Serial.println("invalid entry");
+        Serial.print("Rejecting invalid temperature source");
         #endif
       }
       break;
-    case PRG_FINALISE:
-      // Save in-memory configuration to EEPROM, flash LEDs to confirm
-      // programming and return to normal operation.
+    case PRG_ACCEPT_SETPOINT:
+      unsigned char selectedSetPoint = DIL_SWITCH.value();
+      SENSORS[selectedSensorIndex].setSetPoint((double) (selectedSetPoint * 2));
+      MACHINE_STATE = PRG_ACCEPT_INTERVAL;
+      LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
+      LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, -1);
       #ifdef DEBUG_SERIAL
-      Serial.println("PRG_FINALISE: saving new configuration");
-      dumpSensorConfiguration();
+      Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature set point set to ");
+      Serial.println(SENSORS[selectedIndex].getSetPoint());
       #endif
-      SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
-      MACHINE_STATE = NORMAL;
-      MACHINE_STATE_RESET_INTERVAL = 0UL;
-      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 3);
-      LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 3);
-      LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
-      LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, 3);
+      break;
+    case PRG_ACCEPT_INTERVAL:
+      unsigned char selectedInterval = DIL_SWITCH.value();
+      if (selectedInterval >= 2) {
+        SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedInterval * 1000UL));
+        SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
+        PRG_ERROR = false;
+        MACHINE_STATE = NORMAL;
+        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 3);
+        LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 3);
+        LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
+        LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, 3);
+        #ifdef DEBUG_SERIAL
+        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": transmission interval set to ");
+        Serial.println(SENSORS[selectedIndex].gettransmissionInterval());
+        Serial.print("Channel "); Serial.print(selectedInstance); Serial.println(": saving configuration");
+        dumpSensorConfiguration();
+        #endif
+      } else {
+        #ifdef DEBUG_SERIAL
+        Serial.print("Rejecting invalid transmission interval");
+        #endif
+      }
       break;
     case PRG_CANCEL:
       // Restore in-memory configuration from EEPROM and return to
       // normal operation.
       #ifdef DEBUG_SERIAL
-      Serial.println("PRG_CANCEL: discarding changes, restoring previous configuration");
+      Serial.println("Discarding configuration changes, restoring previous configuration");
       dumpSensorConfiguration();
       #endif
       SENSORS[selectedSensorIndex].load(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
@@ -564,6 +568,8 @@ void processMachineState() {
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0);
+      break;
+    default:
       break;
   }
 }
