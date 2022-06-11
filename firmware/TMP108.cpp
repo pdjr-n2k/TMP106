@@ -230,6 +230,7 @@ Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 enum MACHINE_STATES { NORMAL, PRG_START, PRG_ACCEPT_INSTANCE, PRG_ACCEPT_SOURCE, PRG_ACCEPT_SETPOINT, PRG_ACCEPT_INTERVAL, PRG_FINALISE, PRG_CANCEL };
 static MACHINE_STATES MACHINE_STATE = NORMAL;
 unsigned long MACHINE_STATE_RESET_INTERVAL = 0UL;
+bool PRG_ERROR = false;
 
 /**********************************************************************
  * SID for clustering N2K messages by sensor process cycle.
@@ -332,10 +333,8 @@ void loop() {
   // only made by processSwitches() and revertMachineStateMaybe(), both
   // of which return true if they make a change.
   if (!JUST_STARTED) {
-    if (processProgrammeSwitchMaybe() || revertMachineStateMaybe()) {
-      DIL_SWITCH.sample();
-      processMachineState();
-    }
+    revertMachineStateMaybe();
+    processProgrammeSwitchMaybe();
   }
 
   // Before we transmit anything, let's do the NMEA housekeeping and
@@ -401,26 +400,17 @@ void processSensors() {
  * from DEBOUNCER and if the switch is depressed the value of
  * MACHINE_STATE will be advanced and the function will return true.
  */
-boolean processProgrammeSwitchMaybe() {
+void processProgrammeSwitchMaybe() {
   static unsigned long deadline = 0UL;
   unsigned long now = millis();
   unsigned retval = false;
   if (now > deadline) {
-    retval = (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0);
-    if (retval) {
-      switch (MACHINE_STATE) {
-        case NORMAL: MACHINE_STATE = PRG_START; break;
-        case PRG_START: MACHINE_STATE = PRG_ACCEPT_INSTANCE; break;
-        case PRG_ACCEPT_INSTANCE: MACHINE_STATE = PRG_ACCEPT_SOURCE; break;
-        case PRG_ACCEPT_SOURCE: MACHINE_STATE = PRG_ACCEPT_SETPOINT; break;
-        case PRG_ACCEPT_SETPOINT: MACHINE_STATE = PRG_ACCEPT_INTERVAL; break;
-        case PRG_ACCEPT_INTERVAL: MACHINE_STATE = PRG_FINALISE; break;
-        default: break;
-      }
+    if (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0) {
+      DIL_SWITCH.sample();
+      processMachineState();
     }
     deadline = (now + SWITCH_PROCESS_INTERVAL);
   }
-  return(retval);
 }
 
 /**********************************************************************
@@ -460,48 +450,51 @@ boolean revertMachineStateMaybe() {
 }
 
 /**********************************************************************
- * Should be called each time MACHINE_STATE is updated to implement any
- * necessary state change processing.
+ * processMachineState() is executed each time the PRG button is
+ * pressed and implements the configuration change dialogue and
+ * consequent actions.
  */
 void processMachineState() {
   static int selectedSensorIndex = -1;
 
   switch (MACHINE_STATE) {
-    case NORMAL:
-      break;
-    case PRG_START:
-      #ifdef DEBUG_SERIAL
-      Serial.print("PRG_START: starting to programme sensor ");
-      #endif
+    case NORMAL: // Start configuration process
       if (DIL_SWITCH.selectedSwitch()) {
         selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
+        #ifdef DEBUG_SERIAL
+        Serial.print("Starting channel configuration dialoge for channel ");
+        Serial.println(selectedIndex + 1);
+        #endif
+        MACHINE_STATE = PRG_ACCEPT_INSTANCE;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
         MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
-        #ifdef DEBUG_SERIAL
-        Serial.println(selectedSensorIndex + 1);
-        #endif
       } else {
-        MACHINE_STATE = NORMAL;
-        MACHINE_STATE_RESET_INTERVAL = 0UL;
+        #ifdef DEBUG_SERIAL
+        Serial.println("Cannot start channel configuration (invalid channel selection)");
+        #endif
       }
       break;
     case PRG_ACCEPT_INSTANCE:
-      #ifdef DEBUG_SERIAL
-      Serial.print("PRG_ACCEPT_INSTANCE: assigning instance ");
-      #endif
-      SENSORS[selectedSensorIndex].setInstance(DIL_SWITCH.value());
-      if (DIL_SWITCH.selectedSwitch() != 0xff) {
+      var selectedInstance = DIL_SWITCH.value();
+      if (selectedInstance = 255) {
+        SENSORS[selectedSensorIndex].setInstance(selectedInstance);
+        SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
+        MACHINE_STATE = NORMAL;
+        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
+        MACHINE_STATE_RESET_INTERVAL = 0UL;
+      } else if (selectedInstance < 253) {
+        SENSORS[selectedSensorIndex].setInstance(selectedInstance);
+        MACHINE_STATE = PRG_ACCEPT_SOURCE;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
-        MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
-        #ifdef DEBUG_SERIAL
-        Serial.println(SENSORS[selectedSensorIndex].getInstance());
-        #endif
+        MACHINE_STATE_RESET_INTERVAL = 0UL;
       } else {
-        MACHINE_STATE = PRG_FINALISE;
+        #ifdef DEBUG_SERIAL
+        Serial.println("Rejecting invalid temperature instance");
+        #endif
       }
-      break;
     case PRG_ACCEPT_SOURCE:
+      var selectedSource = DIL_SWITCH.value();
       #ifdef DEBUG_SERIAL
       Serial.print("PRG_ACCEPT_SOURCE: assigning source ");
       #endif
@@ -526,12 +519,22 @@ void processMachineState() {
       break;
     case PRG_ACCEPT_INTERVAL:
       #ifdef DEBUG_SERIAL
-      Serial.print("PRG_ACCEPT_INTERVAL: assigning transmission interval ");
+      Serial.print("PRG_ACCEPT_INTERVAL: ");
       #endif
-      SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (DIL_SWITCH.value() * 1000UL));
-      #ifdef DEBUG_SERIAL
-      Serial.println(SENSORS[selectedSensorIndex].getTransmissionInterval());
-      #endif
+      if (DIL_SWITCH.value() >= 2) {
+        SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (DIL_SWITCH.value() * 1000UL));
+        PRG_ERROR = false;
+        MACHINE_STATE = PRG_FINALISE;
+        #ifdef DEBUG_SERIAL
+        Serial.println(SENSORS[selectedSensorIndex].getTransmissionInterval());
+        #endif
+      } else {
+        PRG_ERROR = true;
+        #ifdef DEBUG_SERIAL
+        Serial.println("invalid entry");
+        #endif
+      }
+      break;
     case PRG_FINALISE:
       // Save in-memory configuration to EEPROM, flash LEDs to confirm
       // programming and return to normal operation.
@@ -557,6 +560,7 @@ void processMachineState() {
       SENSORS[selectedSensorIndex].load(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
       MACHINE_STATE = NORMAL;
       MACHINE_STATE_RESET_INTERVAL = 0UL;
+      PRG_ERROR = false;
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0);
