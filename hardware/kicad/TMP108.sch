@@ -5,8 +5,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "TMP108 Temperature Module"
-Date "2020-09-16"
-Rev "1.0"
+Date "2022-06-11"
+Rev "1.1"
 Comp "PDJR <preeve@pdjr.eu>"
 Comment1 ""
 Comment2 ""

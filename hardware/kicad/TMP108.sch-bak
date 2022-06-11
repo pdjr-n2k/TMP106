@@ -631,7 +631,7 @@ F 3 "" H 10450 1150 50  0001 C CNN
 	1    10450 1150
 	0    -1   -1   0   
 $EndComp
-Text Label 5950 2900 0    50   ~ 0
+Text Label 5950 2800 0    50   ~ 0
 LED_SOURCE
 $Comp
 L Device:R R11
@@ -681,7 +681,7 @@ F 3 "" H 10450 1850 50  0001 C CNN
 	1    10450 1850
 	0    -1   -1   0   
 $EndComp
-Text Label 5950 2800 0    50   ~ 0
+Text Label 5950 2900 0    50   ~ 0
 LED_SETPOINT
 Wire Wire Line
 	4850 2600 4350 2600
@@ -724,7 +724,7 @@ Wire Wire Line
 Connection ~ 1250 3350
 Wire Wire Line
 	1250 3350 1250 3550
-Text Label 4850 1700 2    50   ~ 0
+Text Label 5950 2700 0    50   ~ 0
 LED_INSTANCE
 $Comp
 L Device:R R2
@@ -1010,7 +1010,7 @@ Text Label 900  4000 2    50   ~ 0
 TERM_A
 Text Label 1500 4000 0    50   ~ 0
 TERM_B
-Text Label 5950 2700 0    50   ~ 0
+Text Label 4850 1700 2    50   ~ 0
 LED_INTERVAL
 $Comp
 L Device:R R12
