@@ -61,7 +61,7 @@
 #define GPIO_ENCODER_BIT2 10
 #define GPIO_ENCODER_BIT1 11
 #define GPIO_ENCODER_BIT0 12
-#define GPIO_BOARD_LED 13
+#define GPIO_INTERVAL_LED 13
 #define GPIO_SENSOR0 A0
 #define GPIO_SENSOR1 A1
 #define GPIO_SENSOR2 A2
@@ -75,7 +75,7 @@
 #define GPIO_SENSOR_PINS { GPIO_SENSOR0, GPIO_SENSOR1, GPIO_SENSOR2, GPIO_SENSOR3, GPIO_SENSOR4, GPIO_SENSOR5, GPIO_SENSOR6, GPIO_SENSOR7 } 
 #define GPIO_ENCODER_PINS { GPIO_ENCODER_BIT0, GPIO_ENCODER_BIT1, GPIO_ENCODER_BIT2, GPIO_ENCODER_BIT3, GPIO_ENCODER_BIT4, GPIO_ENCODER_BIT5, GPIO_ENCODER_BIT6, GPIO_ENCODER_BIT7 }
 #define GPIO_INPUT_PINS { GPIO_PROGRAMME_SWITCH, GPIO_ENCODER_BIT0, GPIO_ENCODER_BIT1, GPIO_ENCODER_BIT2, GPIO_ENCODER_BIT3, GPIO_ENCODER_BIT4, GPIO_ENCODER_BIT5, GPIO_ENCODER_BIT6, GPIO_ENCODER_BIT7 }
-#define GPIO_OUTPUT_PINS { GPIO_BOARD_LED, GPIO_POWER_LED, GPIO_INSTANCE_LED, GPIO_SOURCE_LED, GPIO_SETPOINT_LED }
+#define GPIO_OUTPUT_PINS { GPIO_INTERVAL_LED, GPIO_POWER_LED, GPIO_INSTANCE_LED, GPIO_SOURCE_LED, GPIO_SETPOINT_LED }
 #define SENSOR_TRANSMIT_DEADLINE_INITIALISER { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL }
 
 /**********************************************************************
@@ -286,7 +286,7 @@ void setup() {
   // Flash the board LED n times (where n = number of configured sensors)
   int n = 0;
   for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) if (SENSORS[i].getInstance() != 0xff) n++;
-  LED_MANAGER.operate(GPIO_BOARD_LED, 0, n);
+  LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, n);
 
   // Initialise and start N2K services.
   NMEA2000.SetProductInformation(PRODUCT_SERIAL_CODE, PRODUCT_CODE, PRODUCT_TYPE, PRODUCT_FIRMWARE_VERSION, PRODUCT_VERSION);
@@ -519,6 +519,7 @@ void processMachineState() {
       #endif
       SENSORS[selectedSensorIndex].setSetPoint((double) (DIL_SWITCH.value() + 173));
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
+      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
       #ifdef DEBUG_SERIAL
       Serial.println(SENSORS[selectedSensorIndex].getSetPoint());
       #endif
@@ -528,8 +529,6 @@ void processMachineState() {
       Serial.print("PRG_ACCEPT_INTERVAL: assigning transmission interval ");
       #endif
       SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (DIL_SWITCH.value() * 1000UL));
-      LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
-      LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
       #ifdef DEBUG_SERIAL
       Serial.println(SENSORS[selectedSensorIndex].getTransmissionInterval());
       #endif
@@ -546,6 +545,7 @@ void processMachineState() {
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 3);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 3);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
+      LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, 3);
       break;
     case PRG_CANCEL:
       // Restore in-memory configuration from EEPROM and return to
