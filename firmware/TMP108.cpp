@@ -462,8 +462,8 @@ void processMachineState() {
       if (DIL_SWITCH.selectedSwitch()) {
         selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
         MACHINE_STATE = PRG_ACCEPT_INSTANCE;
-        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
         MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
         #ifdef DEBUG_SERIAL
         Serial.print("Starting channel configuration dialoge for channel ");
         Serial.println(selectedIndex + 1);
@@ -480,8 +480,8 @@ void processMachineState() {
         SENSORS[selectedSensorIndex].setInstance(selectedInstance);
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         MACHINE_STATE = NORMAL;
-        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
         MACHINE_STATE_RESET_INTERVAL = 0UL;
+        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
         #ifdef DEBUG_SERIAL
         Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": deleting configuration");
         dumpSensorConfiguration();
@@ -489,9 +489,9 @@ void processMachineState() {
       } else if (selectedInstance < 253) {
         SENSORS[selectedSensorIndex].setInstance(selectedInstance);
         MACHINE_STATE = PRG_ACCEPT_SOURCE;
+        MACHINE_STATE_RESET_INTERVAL = 0UL;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
-        MACHINE_STATE_RESET_INTERVAL = 0UL;
         #ifdef DEBUG_SERIAL
         Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature instance set to ");
         Serial.println(SENSORS[selectedIndex].getInstance());
@@ -507,9 +507,9 @@ void processMachineState() {
       if ((selectedSource < 16) || ((selectedSource > 127) && (selectedSource < 253))) {
         SENSORS[selectedIndex].setSource(selectedSource);
         MACHINE_STATE = PRG_ACCEPT_SETPOINT;
+        MACHINE_STATE_RESET_INTERVAL = 0UL;
         LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
         LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, -1);
-        MACHINE_STATE_RESET_INTERVAL = 0UL;
         #ifdef DEBUG_SERIAL
         Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature source set to ");
         Serial.println(SENSORS[selectedIndex].getSource());
@@ -524,6 +524,7 @@ void processMachineState() {
       unsigned char selectedSetPoint = DIL_SWITCH.value();
       SENSORS[selectedSensorIndex].setSetPoint((double) (selectedSetPoint * 2));
       MACHINE_STATE = PRG_ACCEPT_INTERVAL;
+      MACHINE_STATE_RESET_INTERVAL = 0UL;
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
       LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, -1);
       #ifdef DEBUG_SERIAL
@@ -536,8 +537,8 @@ void processMachineState() {
       if (selectedInterval >= 2) {
         SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedInterval * 1000UL));
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
-        PRG_ERROR = false;
         MACHINE_STATE = NORMAL;
+        MACHINE_STATE_RESET_INTERVAL = 0UL;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 3);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 3);
         LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
@@ -564,10 +565,10 @@ void processMachineState() {
       SENSORS[selectedSensorIndex].load(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
       MACHINE_STATE = NORMAL;
       MACHINE_STATE_RESET_INTERVAL = 0UL;
-      PRG_ERROR = false;
-      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
-      LED_MANAGER.operate(GPIO_SOURCE_LED, 0);
-      LED_MANAGER.operate(GPIO_SETPOINT_LED, 0);
+      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 1);
+      LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 1);
+      LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 1);
+      LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, 1);
       break;
     default:
       break;
