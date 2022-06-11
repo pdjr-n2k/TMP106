@@ -168,13 +168,12 @@
 void dumpSensorConfiguration();
 #endif
 void messageHandler(const tN2kMsg&);
-bool processProgrammeSwitchMaybe();
+void processProgrammeSwitchMaybe();
+void processProgrammeSwitch();
 void processSensors();
-bool processSwitches();
-bool revertMachineStateMaybe();
+void revertMachineStateMaybe();
 void transmitPgn130316(Sensor sensor);
 void processTransmitQueueMaybe();
-void processMachineState();
 
 /**********************************************************************
  * PGNs of messages transmitted by this program.
@@ -391,27 +390,6 @@ void processSensors() {
   SID++;
 }
 
-/**********************************************************************
- * switchPressed() should be called directly from loop(). The function
- * uses a simple elapse timer to ensure that processing is only invoked
- * once every SWITCH_PROCESS_INTERVAL milliseconds.
- * 
- * The function will then recover the state of GPIO_PROGRAMME_SWITCH
- * from DEBOUNCER and if the switch is depressed the value of
- * MACHINE_STATE will be advanced and the function will return true.
- */
-void processProgrammeSwitchMaybe() {
-  static unsigned long deadline = 0UL;
-  unsigned long now = millis();
-  unsigned retval = false;
-  if (now > deadline) {
-    if (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0) {
-      DIL_SWITCH.sample();
-      processMachineState();
-    }
-    deadline = (now + SWITCH_PROCESS_INTERVAL);
-  }
-}
 
 /**********************************************************************
  * processTransmitQueue() should be called directly from loop and will
@@ -440,13 +418,31 @@ void processTransmitQueueMaybe() {
  * inactivity, then MACHINE_STATE will be set to PRG_CANCEL and true
  * will be returned.
  */
-boolean revertMachineStateMaybe() {
-  boolean retval = false;
+void revertMachineStateMaybe() {
   if ((MACHINE_STATE_RESET_INTERVAL != 0UL) && (millis() > MACHINE_STATE_RESET_INTERVAL)) {
     MACHINE_STATE = PRG_CANCEL;
-    retval = true;
   }
-  return(retval);
+}
+
+/**********************************************************************
+ * switchPressed() should be called directly from loop(). The function
+ * uses a simple elapse timer to ensure that processing is only invoked
+ * once every SWITCH_PROCESS_INTERVAL milliseconds.
+ * 
+ * The function will then recover the state of GPIO_PROGRAMME_SWITCH
+ * from DEBOUNCER and if the switch is depressed the value of
+ * MACHINE_STATE will be advanced and the function will return true.
+ */
+void processProgrammeSwitchMaybe() {
+  static unsigned long deadline = 0UL;
+  unsigned long now = millis();
+  if (now > deadline) {
+    if (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0) {
+      DIL_SWITCH.sample();
+      processProgrammeSwitch();
+    }
+    deadline = (now + SWITCH_PROCESS_INTERVAL);
+  }
 }
 
 /**********************************************************************
@@ -454,8 +450,9 @@ boolean revertMachineStateMaybe() {
  * pressed and implements the configuration change dialogue and
  * consequent actions.
  */
-void processMachineState() {
-  static int selectedSensorIndex = -1;
+void processProgrammeSwitch() {
+  static int selectedSensorIndex = 0;
+  unsigned char selectedValue = DIL_SWITCH.value();
 
   switch (MACHINE_STATE) {
     case NORMAL: // Start configuration process
@@ -466,7 +463,7 @@ void processMachineState() {
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
         #ifdef DEBUG_SERIAL
         Serial.print("Starting channel configuration dialoge for channel ");
-        Serial.println(selectedIndex + 1);
+        Serial.println(selectedSensorIndex + 1);
         #endif
       } else {
         #ifdef DEBUG_SERIAL
@@ -475,26 +472,25 @@ void processMachineState() {
       }
       break;
     case PRG_ACCEPT_INSTANCE:
-      unsigned char selectedInstance = DIL_SWITCH.value();
-      if (selectedInstance = 255) {
-        SENSORS[selectedSensorIndex].setInstance(selectedInstance);
+      if (selectedValue == 255) {
+        SENSORS[selectedSensorIndex].setInstance(selectedValue);
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         MACHINE_STATE = NORMAL;
         MACHINE_STATE_RESET_INTERVAL = 0UL;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
         #ifdef DEBUG_SERIAL
-        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": deleting configuration");
+        Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": deleting configuration");
         dumpSensorConfiguration();
         #endif
-      } else if (selectedInstance < 253) {
-        SENSORS[selectedSensorIndex].setInstance(selectedInstance);
+      } else if (selectedValue < 253) {
+        SENSORS[selectedSensorIndex].setInstance(selectedValue);
         MACHINE_STATE = PRG_ACCEPT_SOURCE;
         MACHINE_STATE_RESET_INTERVAL = 0UL;
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
         #ifdef DEBUG_SERIAL
-        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature instance set to ");
-        Serial.println(SENSORS[selectedIndex].getInstance());
+        Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": temperature instance set to ");
+        Serial.println(SENSORS[selectedSensorIndex].getInstance());
         #endif
       } else {
         #ifdef DEBUG_SERIAL
@@ -503,16 +499,15 @@ void processMachineState() {
       }
       break;
     case PRG_ACCEPT_SOURCE:
-      unsigned char selectedSource = DIL_SWITCH.value();
-      if ((selectedSource < 16) || ((selectedSource > 127) && (selectedSource < 253))) {
-        SENSORS[selectedIndex].setSource(selectedSource);
+      if ((selectedValue < 16) || ((selectedValue > 127) && (selectedValue < 253))) {
+        SENSORS[selectedSensorIndex].setSource(selectedValue);
         MACHINE_STATE = PRG_ACCEPT_SETPOINT;
         MACHINE_STATE_RESET_INTERVAL = 0UL;
         LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
         LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, -1);
         #ifdef DEBUG_SERIAL
-        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature source set to ");
-        Serial.println(SENSORS[selectedIndex].getSource());
+        Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": temperature source set to ");
+        Serial.println(SENSORS[selectedSensorIndex].getSource());
         #endif
       } else {
         #ifdef DEBUG_SERIAL
@@ -521,21 +516,19 @@ void processMachineState() {
       }
       break;
     case PRG_ACCEPT_SETPOINT:
-      unsigned char selectedSetPoint = DIL_SWITCH.value();
-      SENSORS[selectedSensorIndex].setSetPoint((double) (selectedSetPoint * 2));
+      SENSORS[selectedSensorIndex].setSetPoint((double) (selectedValue * 2));
       MACHINE_STATE = PRG_ACCEPT_INTERVAL;
       MACHINE_STATE_RESET_INTERVAL = 0UL;
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
       LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, -1);
       #ifdef DEBUG_SERIAL
-      Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": temperature set point set to ");
-      Serial.println(SENSORS[selectedIndex].getSetPoint());
+      Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": temperature set point set to ");
+      Serial.println(SENSORS[selectedSensorIndex].getSetPoint());
       #endif
       break;
     case PRG_ACCEPT_INTERVAL:
-      unsigned char selectedInterval = DIL_SWITCH.value();
-      if (selectedInterval >= 2) {
-        SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedInterval * 1000UL));
+      if (selectedValue >= 2) {
+        SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedValue * 1000UL));
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         MACHINE_STATE = NORMAL;
         MACHINE_STATE_RESET_INTERVAL = 0UL;
@@ -544,9 +537,9 @@ void processMachineState() {
         LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
         LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, 3);
         #ifdef DEBUG_SERIAL
-        Serial.print("Channel "); Serial.print(selectedInstance); Serial.print(": transmission interval set to ");
-        Serial.println(SENSORS[selectedIndex].gettransmissionInterval());
-        Serial.print("Channel "); Serial.print(selectedInstance); Serial.println(": saving configuration");
+        Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": transmission interval set to ");
+        Serial.println(SENSORS[selectedSensorIndex].getTransmissionInterval());
+        Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.println(": saving configuration");
         dumpSensorConfiguration();
         #endif
       } else {
