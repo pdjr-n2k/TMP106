@@ -8,9 +8,6 @@
  * 
  * The firmware supports LM335Z sensors.
  * 
- * /**********************************************************************
-/**********************************************************************
-/**********************************************************************
  * The module operates as simple state machine whose states are defined
  * by the MACHINE_STATES enum. At any one time the device is in a state
  * recorded in MACHINE_STATE: either its NORMAL state (in which it is
@@ -180,6 +177,21 @@
 #define MINIMUM_TRANSMIT_CYCLE 500        // N2K defined fastest allowed transmit rate for this module.
 
 /**********************************************************************
+ * The program operates as a state machine. At any moment in time the
+ * system is either operating normally (i.e. processing/transmitting
+ * temperature readings) or it is stepping through a user-mediated,
+ * multi-state, configuration process. The transition from normal
+ * operation into and between programming modes is triggered by
+ * sequential presses of the PRG button.
+ * 
+ * MACHINE_STATES enumerates all possible machine states.
+ * MACHINE_STATE captures the current machine state.
+ * CONFIGURATION_TIMEOUT_COUNTER 
+ */
+
+enum MACHINE_STATES { NORMAL, CHANGE_CHANNEL_INSTANCE, CHANGE_CHANNEL_SOURCE, CHANGE_CHANNEL_SETPOINT, CHANGE_CHANNEL_INTERVAL, CANCEL_CONFIGURATION };
+
+/**********************************************************************
  * Declarations of local functions.
  */
 #ifdef DEBUG_SERIAL
@@ -188,8 +200,8 @@ void dumpSensorConfiguration();
 void messageHandler(const tN2kMsg&);
 void processProgrammeSwitchMaybe();
 void performConfigurationTimeoutMaybe();
-MACHINE_STATES performMachineStateTransition(MACHINE_STATES state);
-void processSensors();
+enum MACHINE_STATES performMachineStateTransition(enum MACHINE_STATES state);
+void processSensorsMaybe();
 void transmitPgn130316(Sensor sensor);
 void processTransmitQueueMaybe();
 
@@ -232,21 +244,10 @@ LedManager LED_MANAGER (LED_MANAGER_HEARTBEAT, LED_MANAGER_INTERVAL);
 unsigned char SENSOR_PINS[] = GPIO_SENSOR_PINS;
 Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 
-/**********************************************************************
- * The program operates as a state machine. At any moment in time the
- * system is either operating normally (i.e. processing/transmitting
- * temperature readings) or it is stepping through a user-mediated,
- * multi-state, configuration process. The transition from normal
- * operation into and between programming modes is triggered by
- * sequential presses of the PRG button.
- * 
- * MACHINE_STATES enumerates all possible machine states.
- * MACHINE_STATE captures the current machine state.
- * CONFIGURATION_TIMEOUT_COUNTER 
- */
-enum MACHINE_STATES { NORMAL, CHANGE_CHANNEL_INSTANCE, CHANGE_CHANNEL_SOURCE, CHANGE_CHANNEL_SETPOINT, CHANGE_CHANNEL_INTERVAL, CANCEL_CONFIGURATION };
 static MACHINE_STATES MACHINE_STATE = NORMAL;
 unsigned long CONFIGURATION_TIMEOUT_COUNTER = 0UL;
+
+
 
 /**********************************************************************
  * SID for clustering N2K messages by sensor process cycle.
@@ -470,8 +471,8 @@ void performConfigurationTimeoutMaybe() {
 /**********************************************************************
  * cancelConfigurationTimeout() is a utility function that simply
  * zeroes CONFIGURATION_TIMEOUT_COUNTER so that a configuration
- * tiemeout processing is disabled. The function always returns a
- * NORRMAL machine state value. 
+ * timeout processing is disabled. The function always returns a NORMAL
+ * machine state value. 
  */
 MACHINE_STATES cancelConfigurationTimeout() {
   CONFIGURATION_TIMEOUT_COUNTER = 0UL;
