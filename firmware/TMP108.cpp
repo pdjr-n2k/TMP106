@@ -134,7 +134,7 @@
 #define SWITCH_PROCESS_INTERVAL 250       // Process switch inputs evety n ms
 #define LED_MANAGER_HEARTBEAT 200         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
-#define PROGRAMME_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
+#define CONFIG_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
 #define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to make a read value
 #define ANALOG_RESOLUTION 1024            // ADC maximum return value
@@ -169,9 +169,9 @@ void dumpSensorConfiguration();
 #endif
 void messageHandler(const tN2kMsg&);
 void processProgrammeSwitchMaybe();
-void processProgrammeSwitch();
+void performConfigurationTimeoutMaybe();
+MACHINE_STATES performMachineStateTransition(MACHINE_STATES state);
 void processSensors();
-void revertMachineStateMaybe();
 void transmitPgn130316(Sensor sensor);
 void processTransmitQueueMaybe();
 
@@ -224,12 +224,11 @@ Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
  * 
  * MACHINE_STATES enumerates all possible machine states.
  * MACHINE_STATE captures the current machine state.
- * MACHINE_STATE_RESET_INTERVAL 
+ * CONFIGURATION_TIMEOUT_COUNTER 
  */
-enum MACHINE_STATES { NORMAL, PRG_START, PRG_ACCEPT_INSTANCE, PRG_ACCEPT_SOURCE, PRG_ACCEPT_SETPOINT, PRG_ACCEPT_INTERVAL, PRG_FINALISE, PRG_CANCEL };
+enum MACHINE_STATES { NORMAL, CHANGE_CHANNEL_INSTANCE, CHANGE_CHANNEL_SOURCE, CHANGE_CHANNEL_SETPOINT, CHANGE_CHANNEL_INTERVAL, CANCEL_CONFIGURATION };
 static MACHINE_STATES MACHINE_STATE = NORMAL;
-unsigned long MACHINE_STATE_RESET_INTERVAL = 0UL;
-bool PRG_ERROR = false;
+unsigned long CONFIGURATION_TIMEOUT_COUNTER = 0UL;
 
 /**********************************************************************
  * SID for clustering N2K messages by sensor process cycle.
@@ -328,11 +327,11 @@ void loop() {
 
   // If the system has settled (had time to debounce) then handle any
   // changes to MACHINE_STATE by reading the current value of DIL_SWITCH
-  // and calling processMachineState(). Changes to MACHINE_STATE are
-  // only made by processSwitches() and revertMachineStateMaybe(), both
+  // and calling performMachineStateTransition(). Changes to MACHINE_STATE are
+  // only made by processSwitches() and performConfigurationTimeoutMaybe(), both
   // of which return true if they make a change.
   if (!JUST_STARTED) {
-    revertMachineStateMaybe();
+    performConfigurationTimeoutMaybe();
     processProgrammeSwitchMaybe();
   }
 
@@ -413,15 +412,43 @@ void processTransmitQueueMaybe() {
 }
 
 /**********************************************************************
- * revertMachineStateMaybe() should be called directly from loop().
- * If the programming mode time window has elapsed because of user
- * inactivity, then MACHINE_STATE will be set to PRG_CANCEL and true
- * will be returned.
+ * The module operates as simple state machine whose states are defined
+ * by the MACHINE_STATES enum. At any one time the device is in a state
+ * recorded in MACHINE_STATE: either its NORMAL state (in which it is
+ * reading sensor data and transmitting it over NMEA), or one of a
+ * handful of CONFIG_ states associated with user-mediated
+ * confiduration of the module.
+ * 
+ * State transition from NORMAL into a CONFIG_ state and transition
+ * between CONFIG_ states is triggered by a press of the module's PRG
+ * button.
+ * 
+ * Transition back to the NORMAL state results from either the
+ * user successfully advancing through and completing the configuration
+ * protocol or by the protocol timing out.
+ *  
  */
-void revertMachineStateMaybe() {
-  if ((MACHINE_STATE_RESET_INTERVAL != 0UL) && (millis() > MACHINE_STATE_RESET_INTERVAL)) {
-    MACHINE_STATE = PRG_CANCEL;
+
+/**********************************************************************
+ * performConfigurationTimeoutMaybe() should be called directly from
+ * loop(). If the configuration timeout window has elapsed then
+ * performMachineStateTransition() will be asked to cancel any active
+ * configuration.
+ */
+void performConfigurationTimeoutMaybe() {
+  if ((CONFIGURATION_TIMEOUT_COUNTER != 0UL) && (millis() > CONFIGURATION_TIMEOUT_COUNTER)) {
+    MACHINE_STATE = performMachineStateTransition(CANCEL_CONFIGURATION);
   }
+}
+
+MACHINE_STATES cancelConfigurationTimeout() {
+  CONFIGURATION_TIMEOUT_COUNTER = 0UL;
+  return(NORMAL);
+}
+
+MACHINE_STATES extendConfigurationTimeout(MACHINE_STATES state) {
+  CONFIGURATION_TIMEOUT_COUNTER = (millis() + CONFIG_TIMEOUT_INTERVAL);
+  return(state);
 }
 
 /**********************************************************************
@@ -439,27 +466,29 @@ void processProgrammeSwitchMaybe() {
   if (now > deadline) {
     if (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0) {
       DIL_SWITCH.sample();
-      processProgrammeSwitch();
+      MACHINE_STATE = performMachineStateTransition(MACHINE_STATE);
     }
     deadline = (now + SWITCH_PROCESS_INTERVAL);
   }
 }
 
 /**********************************************************************
- * processMachineState() is executed each time the PRG button is
- * pressed and implements the configuration change dialogue and
- * consequent actions.
+ * performMachineStateTransition(state) performs all of the processing
+ * required to transition from <state> to some new machine state which
+ * it returns as its result.
+ * 
+ * As a side effect, this function implements all of the UI associated
+ * with configuration change and any consequent actions.
  */
-void processProgrammeSwitch() {
+MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
   static int selectedSensorIndex = 0;
   unsigned char selectedValue = DIL_SWITCH.value();
 
-  switch (MACHINE_STATE) {
+  switch (state) {
     case NORMAL: // Start configuration process
       if (DIL_SWITCH.selectedSwitch()) {
         selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
-        MACHINE_STATE = PRG_ACCEPT_INSTANCE;
-        MACHINE_STATE_RESET_INTERVAL = (millis() + PROGRAMME_TIMEOUT_INTERVAL);
+        state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
         #ifdef DEBUG_SERIAL
         Serial.print("Starting channel configuration dialoge for channel ");
@@ -471,12 +500,11 @@ void processProgrammeSwitch() {
         #endif
       }
       break;
-    case PRG_ACCEPT_INSTANCE:
+    case CHANGE_CHANNEL_INSTANCE:
       if (selectedValue == 255) {
         SENSORS[selectedSensorIndex].setInstance(selectedValue);
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
-        MACHINE_STATE = NORMAL;
-        MACHINE_STATE_RESET_INTERVAL = 0UL;
+        state = cancelConfigurationTimeout();
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
         #ifdef DEBUG_SERIAL
         Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": deleting configuration");
@@ -484,8 +512,7 @@ void processProgrammeSwitch() {
         #endif
       } else if (selectedValue < 253) {
         SENSORS[selectedSensorIndex].setInstance(selectedValue);
-        MACHINE_STATE = PRG_ACCEPT_SOURCE;
-        MACHINE_STATE_RESET_INTERVAL = 0UL;
+        state = extendConfigurationTimeout(CHANGE_CHANNEL_SOURCE);
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
         #ifdef DEBUG_SERIAL
@@ -498,11 +525,10 @@ void processProgrammeSwitch() {
         #endif
       }
       break;
-    case PRG_ACCEPT_SOURCE:
+    case CHANGE_CHANNEL_SOURCE:
       if ((selectedValue < 16) || ((selectedValue > 127) && (selectedValue < 253))) {
         SENSORS[selectedSensorIndex].setSource(selectedValue);
-        MACHINE_STATE = PRG_ACCEPT_SETPOINT;
-        MACHINE_STATE_RESET_INTERVAL = 0UL;
+        state = extendConfigurationTimeout(CHANGE_CHANNEL_SETPOINT);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
         LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, -1);
         #ifdef DEBUG_SERIAL
@@ -515,10 +541,9 @@ void processProgrammeSwitch() {
         #endif
       }
       break;
-    case PRG_ACCEPT_SETPOINT:
+    case CHANGE_CHANNEL_SETPOINT:
       SENSORS[selectedSensorIndex].setSetPoint((double) (selectedValue * 2));
-      MACHINE_STATE = PRG_ACCEPT_INTERVAL;
-      MACHINE_STATE_RESET_INTERVAL = 0UL;
+      state = extendConfigurationTimeout(CHANGE_CHANNEL_INTERVAL);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
       LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, -1);
       #ifdef DEBUG_SERIAL
@@ -526,12 +551,11 @@ void processProgrammeSwitch() {
       Serial.println(SENSORS[selectedSensorIndex].getSetPoint());
       #endif
       break;
-    case PRG_ACCEPT_INTERVAL:
+    case CHANGE_CHANNEL_INTERVAL:
       if (selectedValue >= 2) {
         SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedValue * 1000UL));
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
-        MACHINE_STATE = NORMAL;
-        MACHINE_STATE_RESET_INTERVAL = 0UL;
+        state = cancelConfigurationTimeout();
         LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 3);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 3);
         LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
@@ -548,7 +572,7 @@ void processProgrammeSwitch() {
         #endif
       }
       break;
-    case PRG_CANCEL:
+    case CANCEL_CONFIGURATION:
       // Restore in-memory configuration from EEPROM and return to
       // normal operation.
       #ifdef DEBUG_SERIAL
@@ -556,8 +580,7 @@ void processProgrammeSwitch() {
       dumpSensorConfiguration();
       #endif
       SENSORS[selectedSensorIndex].load(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
-      MACHINE_STATE = NORMAL;
-      MACHINE_STATE_RESET_INTERVAL = 0UL;
+      state = cancelConfigurationTimeout();
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 1);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 1);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 1);
@@ -566,19 +589,7 @@ void processProgrammeSwitch() {
     default:
       break;
   }
-}
-
-/**********************************************************************
- * Return the integer value represented by the state of the digital
- * inputs passed in the <pins> array. Pin addresses are assumed to be
- * in the order lsb through msb.
- */
-unsigned char getEncodedByte(int *pins) {
-  unsigned char retval = 0x00;
-  for (unsigned int i = 0; i < ELEMENTCOUNT(pins); i++) {
-    retval = retval + (digitalRead(pins[i] << i));
-  }
-  return(retval);
+  return(state);
 }
 
 /**********************************************************************
