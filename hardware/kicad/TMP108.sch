@@ -6,7 +6,7 @@ encoding utf-8
 Sheet 1 1
 Title "TMP108 Temperature Module"
 Date "2022-06-11"
-Rev "1.1"
+Rev "2.0.0"
 Comp "PDJR <preeve@pdjr.eu>"
 Comment1 ""
 Comment2 ""

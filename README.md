@@ -10,55 +10,30 @@ Readings from connected sensors are transmitted over NMEA 2000 using
 
 Multiple __TMP108__ modules can be installed on a single NMEA bus.
 
-## Design criteria
-
-1. Aim for 100% NMEA compliance
-2. Support the use of multiple, inexpensive, wide-range, temperature
-   sensors
-3. Support physical and logical approaches to module configuration
-4. Support physical reporting of module operational state
-
 ## State of development
 
-A complete, functional, prototype implementation of TMP108 is in
-production use on the author's vessel. 
+A complete, functional, prototype implementation is available as
+TMP108 2.0.0.
+This version is in production use on a busy NMEA bus on the
+author's vessel.
+Key features of the design/implementation are: 
 
-1. The module is NMEA functional, but not 100% NMEA compliant, mainly
-   because it does not yet support remote configuration over the NMEA
-   bus.
-
-   __TMP108__ connects to a host NMEA bus by a standard M12 5-pin
-   circular connector and is powered directly from the NMEA bus.
-   The module has an NMEA LEN of 1.
-
-2. The module supports the widely used and inexpensive LM335Z
-   temperature sensor.
-   Packaged versions of the sensor are available from marine suppliers
-   like Victron.
-
-3. Physical configuration is accomplised through a simple, DIL switch
-   based protocol which allows sensors to be added to the module by
-   assignment of a temperature source code, a temperature instance and
-   a set temperature.
-   Sensor configurations can be amended and sensors deleted.
-
-   Support for remote configuration of the module is a work in progress.
-
-4. The module reports its operating state through a single external LED.
-   Additional internal LEDs provide feedback during the configuration
-   protocol.
-
-
-Am LED indicator confirms NMEA connection and module operation.
-
-The module is configured by a PCB mounted DIP switch which allows entry
-of NMEA temperature source codes, instance address, and set temperature
-foreach connected sensor.
-
+1. Easy bus installation by a standard M12 5-pin circular connector.
+2. Powered directly from the NMEA bus with an LEN of 1.
+3. Incorporates an installer selectable 120 Ohm bus termination.
+3. Supports up to eight LM335Z temperature sensors (packaged versions
+   of this sensor are available from marine suppliers like Victron).
+4. Operating status indicated by externally visible LED.
+5. All sensor channels are fully field configurable through a simple
+   DIL switch based configuration protocol.
+6. Support for remote configuration of the module is not currently
+   available, but is a work in progress.
 
 ## About the module
 
 ![Fig 1: module schematic](tsense.png.svg)
+
+![Fig 2: PCB layout]()
 
 Figure 1 illustrates the appearance of the module with the cover in
 place and with the cover removed.
