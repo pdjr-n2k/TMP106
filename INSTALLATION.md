@@ -1,4 +1,6 @@
-# Module configuration
+# Installing a TMP108 module
+
+To install a TMP108
 
 Field configuration of the module must be performed using the switches
 mounted on the PCB.
