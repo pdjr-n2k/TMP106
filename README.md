@@ -29,11 +29,20 @@ Key features of the design/implementation are:
 6. Support for remote configuration of the module is not currently
    available, but is a work in progress.
 
-## About the module
+## Hardware
 
-![Fig 1: module schematic](tsense.png.svg)
+### PCB
 
-![Fig 2: PCB layout]()
+The module PCB is a 75mm x 75mm square with silk-screen component
+placement labels.
+
+![Fig 2: PCB layout](images/TMP108.2-brd.svg)
+
+### Parts list
+
+The following parts list itemises all components required for PCB
+assembly
+[RS Components](https://uk.rs-online.com/).
 
 Figure 1 illustrates the appearance of the module with the cover in
 place and with the cover removed.
