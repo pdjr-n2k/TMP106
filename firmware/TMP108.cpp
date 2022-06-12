@@ -7,6 +7,24 @@
  * Temperature, Extended Range.
  * 
  * The firmware supports LM335Z sensors.
+ * 
+ * /**********************************************************************
+/**********************************************************************
+/**********************************************************************
+ * The module operates as simple state machine whose states are defined
+ * by the MACHINE_STATES enum. At any one time the device is in a state
+ * recorded in MACHINE_STATE: either its NORMAL state (in which it is
+ * reading sensor data and transmitting it over NMEA), or one of a
+ * handful of CONFIG_ states associated with user-mediated
+ * confiduration of the module.
+ * 
+ * State transition from NORMAL into a CONFIG_ state and transition
+ * between CONFIG_ states is triggered by a press of the module's PRG
+ * button.
+ * 
+ * Transition back to the NORMAL state results from either the
+ * user successfully advancing through and completing the configuration
+ * protocol or by the protocol timing out.
  */
 
 #include <Arduino.h>
@@ -346,7 +364,7 @@ void loop() {
   // If the device isn't currently being programmed, then process
   // temperature sensors and transmit readings on N2K. 
   if ((!JUST_STARTED) && (MACHINE_STATE == NORMAL)) {
-    processSensors();
+    processSensorsMaybe();
     processTransmitQueueMaybe();
   }
 
@@ -355,13 +373,13 @@ void loop() {
 }
 
 /**********************************************************************
- * processSensors() should be called directly from loop(). The function
- * iterates through all sensors. If it finds an enabled sensor whose
- * transmission interval has expired then it updates the sensor
- * temperature from the ADC and queues the sensor for transmission on
- * the N2K bus.
+ * processSensorsMaybe() should be called directly from loop(). The
+ * function iterates through all sensors and if it finds an enabled
+ * sensor whose transmission interval has expired then it updates the
+ * sensor temperature from the ADC and queues the sensor index in
+ * TRANSMIT_QUEUE for subsequent transmission on the N2K bus.
  */
-void processSensors() {
+void processSensorsMaybe() {
   unsigned long now = millis();
 
   for (unsigned int sensor = 0; sensor < ELEMENTCOUNT(SENSORS); sensor++) {
@@ -389,11 +407,37 @@ void processSensors() {
   SID++;
 }
 
+/**********************************************************************
+ * processProgrammeSwitchMaybe() should be called directly from loop().
+ * The function uses an elapse timer to ensure that processing is only
+ * invoked once every SWITCH_PROCESS_INTERVAL milliseconds.
+ * 
+ * The function will then checkpoint the debounced state of the switch
+ * on the GPIO_PROGRAMME_SWITCH pin and, if it is active, will call
+ * performMachineStateTransition() to modify the device's
+ * MACHINE_STATE.
+ */
+void processProgrammeSwitchMaybe() {
+  static unsigned long deadline = 0UL;
+  unsigned long now = millis();
+  if (now > deadline) {
+    if (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0) {
+      DIL_SWITCH.sample();
+      MACHINE_STATE = performMachineStateTransition(MACHINE_STATE);
+    }
+    deadline = (now + SWITCH_PROCESS_INTERVAL);
+  }
+}
 
 /**********************************************************************
- * processTransmitQueue() should be called directly from loop and will
- * seek to process a single item from the head of TRANSMIT_QUEUE once
- * every MINIMUM_TRANSMIT_CYCLE milliseconds.
+ * processTransmitQueue() should be called directly from loop. The
+ * function uses an elapse timer to ensure that processing is only
+ * invoked once every MINIMUM_TRANSMIT_CYCLE milliseconds. This value
+ * should be set to the maximum transmit frequencyy for PGN130316.
+ * 
+ * Each time around the function removes a sensor index (if one is
+ * available) from TRANSMIT_QUEUE and transmits the referenced sensor
+ * data over the NMEA bus.
  */ 
 void processTransmitQueueMaybe() {
   static unsigned long deadline = 0UL;
@@ -412,28 +456,10 @@ void processTransmitQueueMaybe() {
 }
 
 /**********************************************************************
- * The module operates as simple state machine whose states are defined
- * by the MACHINE_STATES enum. At any one time the device is in a state
- * recorded in MACHINE_STATE: either its NORMAL state (in which it is
- * reading sensor data and transmitting it over NMEA), or one of a
- * handful of CONFIG_ states associated with user-mediated
- * confiduration of the module.
- * 
- * State transition from NORMAL into a CONFIG_ state and transition
- * between CONFIG_ states is triggered by a press of the module's PRG
- * button.
- * 
- * Transition back to the NORMAL state results from either the
- * user successfully advancing through and completing the configuration
- * protocol or by the protocol timing out.
- *  
- */
-
-/**********************************************************************
  * performConfigurationTimeoutMaybe() should be called directly from
- * loop(). If the configuration timeout window has elapsed then
- * performMachineStateTransition() will be asked to cancel any active
- * configuration.
+ * loop(). The function uses an elapse timer to detect whether or not
+ * module configuration should be cancelled because of an absence of
+ * user input and the module returned to normal operation.
  */
 void performConfigurationTimeoutMaybe() {
   if ((CONFIGURATION_TIMEOUT_COUNTER != 0UL) && (millis() > CONFIGURATION_TIMEOUT_COUNTER)) {
@@ -441,36 +467,27 @@ void performConfigurationTimeoutMaybe() {
   }
 }
 
+/**********************************************************************
+ * cancelConfigurationTimeout() is a utility function that simply
+ * zeroes CONFIGURATION_TIMEOUT_COUNTER so that a configuration
+ * tiemeout processing is disabled. The function always returns a
+ * NORRMAL machine state value. 
+ */
 MACHINE_STATES cancelConfigurationTimeout() {
   CONFIGURATION_TIMEOUT_COUNTER = 0UL;
   return(NORMAL);
 }
 
+/**********************************************************************
+ * extendConfigurationTimeout(state) is a utility function that simply
+ * sets CONFIGURATION_TIMEOUT_COUNTER to its operational value. The
+ * function always returns <state>.
+ */
 MACHINE_STATES extendConfigurationTimeout(MACHINE_STATES state) {
   CONFIGURATION_TIMEOUT_COUNTER = (millis() + CONFIG_TIMEOUT_INTERVAL);
   return(state);
 }
 
-/**********************************************************************
- * switchPressed() should be called directly from loop(). The function
- * uses a simple elapse timer to ensure that processing is only invoked
- * once every SWITCH_PROCESS_INTERVAL milliseconds.
- * 
- * The function will then recover the state of GPIO_PROGRAMME_SWITCH
- * from DEBOUNCER and if the switch is depressed the value of
- * MACHINE_STATE will be advanced and the function will return true.
- */
-void processProgrammeSwitchMaybe() {
-  static unsigned long deadline = 0UL;
-  unsigned long now = millis();
-  if (now > deadline) {
-    if (DEBOUNCER.channelState(GPIO_PROGRAMME_SWITCH) == 0) {
-      DIL_SWITCH.sample();
-      MACHINE_STATE = performMachineStateTransition(MACHINE_STATE);
-    }
-    deadline = (now + SWITCH_PROCESS_INTERVAL);
-  }
-}
 
 /**********************************************************************
  * performMachineStateTransition(state) performs all of the processing
