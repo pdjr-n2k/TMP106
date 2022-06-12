@@ -177,18 +177,12 @@
 #define MINIMUM_TRANSMIT_CYCLE 500        // N2K defined fastest allowed transmit rate for this module.
 
 /**********************************************************************
- * The program operates as a state machine. At any moment in time the
+ * This firmware operates as a state machine. At any moment in time the
  * system is either operating normally (i.e. processing/transmitting
  * temperature readings) or it is stepping through a user-mediated,
- * multi-state, configuration process. The transition from normal
- * operation into and between programming modes is triggered by
- * sequential presses of the PRG button.
- * 
- * MACHINE_STATES enumerates all possible machine states.
- * MACHINE_STATE captures the current machine state.
- * CONFIGURATION_TIMEOUT_COUNTER 
+ * multi-state, configuration process. This enumerates all possible
+ * machine states.
  */
-
 enum MACHINE_STATES { NORMAL, CHANGE_CHANNEL_INSTANCE, CHANGE_CHANNEL_SOURCE, CHANGE_CHANNEL_SETPOINT, CHANGE_CHANNEL_INTERVAL, CANCEL_CONFIGURATION };
 
 /**********************************************************************
@@ -198,12 +192,14 @@ enum MACHINE_STATES { NORMAL, CHANGE_CHANNEL_INSTANCE, CHANGE_CHANNEL_SOURCE, CH
 void dumpSensorConfiguration();
 #endif
 void messageHandler(const tN2kMsg&);
-void processProgrammeSwitchMaybe();
-void performConfigurationTimeoutMaybe();
-enum MACHINE_STATES performMachineStateTransition(enum MACHINE_STATES state);
+
 void processSensorsMaybe();
-void transmitPgn130316(Sensor sensor);
+void processProgrammeSwitchMaybe();
 void processTransmitQueueMaybe();
+void performConfigurationTimeoutMaybe();
+
+enum MACHINE_STATES performMachineStateTransition(enum MACHINE_STATES state);
+void transmitPgn130316(Sensor sensor);
 
 /**********************************************************************
  * PGNs of messages transmitted by this program.
