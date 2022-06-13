@@ -519,6 +519,9 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
             scratch.setInstance(i); scratch.setSource(i); scratch.setSetPoint(i); scratch.setTemperature(i);
             transmitPgn130316(scratch);
             delay(MINIMUM_TRANSMIT_CYCLE);
+            #ifdef DEBUG_SERIAL
+            Serial.print("Transmitting test PGN130316 with instance "); Serial.println(i);
+            #endif
           }
           break;
         case 15: 
@@ -529,7 +532,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
           }
           state = cancelConfigurationTimeout();
           #ifdef DEBUG_SERIAL
-          Serial.println("All channel configurations have been deleted");
+          Serial.println("Deleting all channel configurations");
           #endif
           break;
         default:
