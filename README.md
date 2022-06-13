@@ -62,6 +62,8 @@ placement labels.
 
 ### Suggested hardware
 
+| Component   | Description                                     | Further information
+|------------ |------------------------------------------------ |--------------------- |
 | Enclosure   | Plastic, general purpose, flange mount          | [919-0391](https://uk.rs-online.com/web/p/general-purpose-enclosures/9190391)
 | Connector   | M12 5-pin male NMEA bus connector               | [877-1154](https://uk.rs-online.com/web/p/industrial-circular-connectors/8771154)
 | Clip        | 3mm LED panel clip                              | Sourced from eBay
