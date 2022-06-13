@@ -38,11 +38,21 @@ placement labels.
 
 ![Fig 2: PCB layout](images/TMP108.2-brd.svg)
 
-### Parts list
+### Electronic components
 
 The following parts list itemises all components required for PCB
 assembly
 [RS Components](https://uk.rs-online.com/).
+
+### Hardware
+
+The following parts list itemises components used by the author for
+assemply of a prototype.
+
+20. [Enclosure](https://uk.rs-online.com/web/p/general-purpose-enclosures/9190391)
+21. [M12-5-pin male connector (for NMEA)](https://uk.rs-online.com/web/p/industrial-circular-connectors/8771154)
+22. LED panel clip (for PWR LED mounting in enclosure - sourced from eBay)      |
+
 
 Figure 1 illustrates the appearance of the module with the cover in
 place and with the cover removed.
