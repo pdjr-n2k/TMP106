@@ -516,7 +516,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
         case 7:
           // Transmit test outout on all channels
           for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
-            scratch.setInstance(i); scratch.setSource(i); scratch.setSetTemperature(i); scratch.setTemperature(i);
+            scratch.setInstance(i); scratch.setSource(i); scratch.setSetPoint(i); scratch.setTemperature(i);
             transmitPgn130316(scratch);
             delay(MINIMUM_TRANSMIT_CYCLE);
           }
