@@ -41,17 +41,37 @@ placement labels.
 ### Electronic components
 
 The following parts list itemises all components required for PCB
-assembly
-[RS Components](https://uk.rs-online.com/).
+assembly.
+
+| Component   | Description                                     | RS Components part / manufacturer product page
+|------------ |------------------------------------------------ |--------------------- |
+| C1          | 1000uF aluminium capacitor                      | [711-1148](https://uk.rs-online.com/web/p/aluminium-capacitors/7111148)
+| C2,C3       | 100nF ceramic capacitor]                        | [538-1427](https://uk.rs-online.com/web/p/mlccs-multilayer-ceramic-capacitors/5381427)
+| D1,D2,D3,D4 | 2V 1.8mm rectangular LED                        | [229-2425](https://uk.rs-online.com/web/p/leds/2292425)
+| D5          | 2V 3.0mm circular LED                           | [228-5916](https://uk.rs-online.com/web/p/leds/2285916)
+| F1          | ECE BU135 1.35A polymer fuse                    | [Manufacturer product page](https://www.ece.com.tw/images/cgcustom/file020170930043926.pdf)
+| J1,J2       | Phoenix Contact FK-MPT terminal block 1x8 3.5mm | [229-2425](https://uk.rs-online.com/web/p/pcb-terminal-blocks/8020169)
+| J3          | Phoenix Contact MPT terminal block 1x5 2.54"    | [220-4298](https://uk.rs-online.com/web/p/pcb-terminal-blocks/2204298)
+| R1,R10-R13  | 390R 0.25W resistor                             | [707-7634](https://uk.rs-online.com/web/p/through-hole-resistors/7077634)
+| R3-R9       | 2K2 0.25W resistor                              | [707-7690](https://uk.rs-online.com/web/p/through-hole-resistors/7077690)
+| R14         | 120R 0.25W resistor                             | [707-7599](https://uk.rs-online.com/web/p/through-hole-resistors/7077599)
+| SW1         | 6mm momentary push button                       |
+| SW2         | 2-way SPST DIP switch                           | [177-4261](https://uk.rs-online.com/web/p/dip-sip-switches/1774261)
+| SW3         | 8-way SPST DIP switch                           | [756-1347](https://uk.rs-online.com/web/p/dip-sip-switches/7561347)
+| U1          | PJRC Teensy 3.2 MCU                             | [Manufacturer product page](https://www.pjrc.com/store/teensy32.html)
+| U2          | TracoPower TMR-1-1211 DC-DC converter           | [781-3190](https://uk.rs-online.com/web/p/dc-dc-converters/7813190)
+| U3          | MCP2551-I/P CAN transceiver                     | [040-2920](https://uk.rs-online.com/web/p/can-interface-ics/0402920)
+| SENSORS     | LM335Z - if you choose to make your own sensors | [159-4685](https://uk.rs-online.com/web/p/temperature-humidity-sensor-ics/1594685)
 
 ### Hardware
 
 The following parts list itemises components used by the author for
 assemply of a prototype.
 
+
 20. [Enclosure](https://uk.rs-online.com/web/p/general-purpose-enclosures/9190391)
 21. [M12-5-pin male connector (for NMEA)](https://uk.rs-online.com/web/p/industrial-circular-connectors/8771154)
-22. LED panel clip (for PWR LED mounting in enclosure - sourced from eBay)      |
+22. 3mm LED panel clip (for PWR LED mounting in enclosure - sourced from eBay)
 
 
 Figure 1 illustrates the appearance of the module with the cover in
