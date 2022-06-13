@@ -1,9 +1,9 @@
 # TMP108 - NMEA 2000 temperature sensor module
 
-This project implements hardware and firmware designs for a module that
-interfaces up to eight
+This project implements hardware and firmware designs for an NMEA
+2000 sensor module that supports the connection of up to eight
 [National Semiconductor LM335Z](https://datasheet.octopart.com/LM335Z-NOPB-Texas-Instruments-datasheet-7836729.pdf)
-(or equivalent) temperature sensors to a host NMEA 2000 bus.
+temperature sensors.
 
 Readings from connected sensors are transmitted over NMEA 2000 using 
 [PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
@@ -12,29 +12,29 @@ Multiple __TMP108__ modules can be installed on a single NMEA bus.
 
 ## State of development
 
-A complete, functional, prototype implementation is available as
-TMP108.2.
-This version is in production use on a busy NMEA bus on the
-author's vessel.
+A complete, functional, implementation is available as
+[TMP108.2]().
 Key features of the design/implementation are: 
 
-1. Easy bus installation by a standard M12 5-pin circular connector.
-2. Powered directly from the NMEA bus with an LEN of 1.
-3. Incorporates an installer selectable 120 Ohm bus termination.
-3. Supports up to eight LM335Z temperature sensors (packaged versions
-   of this sensor are available from marine suppliers like Victron).
-4. Operating status indicated by externally visible LED.
-5. All sensor channels are fully field configurable through a simple
-   DIL switch based configuration protocol.
-6. Support for remote configuration of the module is not currently
+1. Easy bus connection by a standard M12 5-pin plug.
+2. Installer selectable 120 Ohm termination resistor allows
+   connection as either a bus drop or a bus termination node.
+3. Powered directly from the NMEA bus with an LEN of 1.
+4. Supports home-brew and commercially available LM335Z temperature
+   sensors.
+5. Operating status indicated by externally visible LED.
+6. Fully field configurable through a simple DIL-switch based
+   configuration protocol.
+7. Easy assembly afforded by PCB with well marked component
+   locations and 100% through-hole mounting.
+8. Support for remote configuration of the module is not currently
    available, but is a work in progress.
 
 ## Hardware
 
 ### PCB
 
-The module PCB is a 75mm x 75mm square with silk-screen component
-placement labels.
+The module PCB is a 75mm x 75mm square. 
 
 ![Fig 2: PCB layout](images/TMP108.2-brd.svg)
 
@@ -64,9 +64,93 @@ placement labels.
 
 | Component   | Description                                     | Further information
 |------------ |------------------------------------------------ |--------------------- |
-| Enclosure   | Plastic, general purpose, flange mount          | [919-0391](https://uk.rs-online.com/web/p/general-purpose-enclosures/9190391)
-| Connector   | M12 5-pin male NMEA bus connector               | [877-1154](https://uk.rs-online.com/web/p/industrial-circular-connectors/8771154)
-| Clip        | 3mm LED panel clip                              | Sourced from eBay
+| ENCLOSURE   | Plastic, general purpose, flange mount box      | [919-0391](https://uk.rs-online.com/web/p/general-purpose-enclosures/9190391)
+| J4          | M12 5-pin male NMEA bus connector               | [877-1154](https://uk.rs-online.com/web/p/industrial-circular-connectors/8771154)
+| CLIP        | 3mm LED panel clip                              | Sourced from eBay
+
+### Assembly
+
+All components need to be placed and soldered with care taken to
+ensure correct orientation and polarity.
+
+The host NMEA bus can be wired directly to J3 or (and preferably)
+ENCLOSURE can be drilled to accommodate J4 and J4's flying leads
+connected to J3.
+
+D5 can be soldered with long leads and a hole drilled in the
+ENCLOSURE to expose the LED or, preferably, D5 can be mounted with
+CLIP to ENCLOSURE and trailing leads used to connect D5 back to
+the PCB mounting location.
+The latter approach means that exact positioning of the hole which
+exposes the PCB mounted LED is not required.
+
+## Module configuration
+
+It will almost always be simpler to configure the module on the bench
+and then install it in its normal operating location.
+
+Begin configuration by exposing the module PCB and connecting the
+module to the host NMEA bus.
+The module will boot and confirm normal operation by flashing the
+PWR LED 1+*n* times, where *n* is the number of configured sensor
+channels.
+A new installation will have no configured channels and so the PWR
+LED will flash just once.
+
+Single and multi-step configuration protocols are available: a step
+always involves setting up a configuration parameter on the PRG-VALUE
+DIL switch and then entering it by briefly pressing the PRG button.
+
+There are two single-step, module-level, configuration options:
+
+| PRG-VALUE  | DIL switch |Description |
+|------------|------------|------------|
+| 128        | [10000000] | Clear module EEPROM (deleting all channel configuration) |
+| 64         | [01000000] | Transmit a dummy PGN130316 for each channel |
+
+If you have an NMEA bus monitor, it's a good idea to fire it up and
+use option 7 in the above table to transmit some test PGNs which you
+should be able to see on your bus monitor.
+
+Each sensor channel is configured using a multi-step protocol.
+After pressing PRG, you have 20 seconds to complete the subsequent step,
+otherwise the channel configuration is abandoned and you will have
+to start the protocol again.
+D1 (INST), D2 (SRCE), D3 (SETP) and D4 (IVAL) help guide tou through
+the protocol: the LED flashes to indicate a particular value should be
+entered and becomes steady when an entry is entered and validated.
+
+The channel configuration protocol looks like this:
+
+1. Select the sensor channel to be configured, then
+2. Enter the temperature instance for this channel , then
+3. Enter the temperature source for this channel, then
+4. Enter the temperature set point for this channel, then
+5. Enter the transmission interval for this channel
+
+Inevitably, there are some "gotchas" to look out for.
+
+STEP 1. You select the sensor channel by setting the sensor channel
+address on PRG-VALUE.
+This must be a number in the range 1 through 8 to match the channel
+numbers printed on the PCB.
+If your entry is accepted D1 (INST) will start to flash and you can
+proceed to STEP 2.
+
+STEP 2. The value you enter here must be either your chosen temperature
+instance number in the range 0..252 or the value 255  - other values are
+silently ignored.
+Using the value 255 will delete any existing configuration for the
+selected channel and end the protocol.
+In most situations it is simplest to just use the channel address you
+set up for STEP 1 as the instance address for STEP 2.
+If your entry is accepted D1 (INST) will go steady, D2 (SRCE) will start
+to flash and you can proceed to STEP 3.
+
+
+STEP 3. 
+
+
 
 
 Figure 1 illustrates the appearance of the module with the cover in
@@ -82,6 +166,8 @@ The PCB has sensor wire terminals (4), a programme switch (5), a
 configuration DIL switch (6) and three configuration LEDs (7).
 A jumper (8) allows connection of the NMEA cable shield to the module
 ground.
+
+## Assembly
 
 ### (1) NMEA bus connector
 
