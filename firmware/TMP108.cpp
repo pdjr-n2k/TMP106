@@ -496,7 +496,7 @@ MACHINE_STATES extendConfigurationTimeout(MACHINE_STATES state) {
 MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
   static int selectedSensorIndex = 0;
   unsigned char selectedValue = DIL_SWITCH.value();
-  SENSOR scratch;
+  Sensor scratch;
 
   switch (state) {
     case NORMAL: // Start configuration process

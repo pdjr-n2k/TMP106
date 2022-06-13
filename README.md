@@ -13,7 +13,7 @@ Multiple __TMP108__ modules can be installed on a single NMEA bus.
 ## State of development
 
 A complete, functional, prototype implementation is available as
-TMP108 2.0.0.
+TMP108.2.
 This version is in production use on a busy NMEA bus on the
 author's vessel.
 Key features of the design/implementation are: 
