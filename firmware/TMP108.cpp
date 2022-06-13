@@ -149,7 +149,7 @@
 #define SWITCH_PROCESS_INTERVAL 250       // Process switch inputs evety n ms
 #define LED_MANAGER_HEARTBEAT 200         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
-#define CONFIG_TIMEOUT_INTERVAL 20000  // Allow 20s to complete each programme step
+#define CONFIG_TIMEOUT_INTERVAL 20000     // Allow 20s to complete each programme step
 #define SENSOR_VOLTS_TO_KELVIN 3.3        // Conversion factor for LM335 temperature sensors
 #define ANALOG_READ_AVAERAGE 10           // Number of ADC samples that average to make a read value
 #define ANALOG_RESOLUTION 1024            // ADC maximum return value
@@ -485,7 +485,6 @@ MACHINE_STATES extendConfigurationTimeout(MACHINE_STATES state) {
   return(state);
 }
 
-
 /**********************************************************************
  * performMachineStateTransition(state) performs all of the processing
  * required to transition from <state> to some new machine state which
@@ -497,21 +496,48 @@ MACHINE_STATES extendConfigurationTimeout(MACHINE_STATES state) {
 MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
   static int selectedSensorIndex = 0;
   unsigned char selectedValue = DIL_SWITCH.value();
+  SENSOR scratch;
 
   switch (state) {
     case NORMAL: // Start configuration process
-      if (DIL_SWITCH.selectedSwitch()) {
-        selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
-        state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
-        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
-        #ifdef DEBUG_SERIAL
-        Serial.print("Starting channel configuration dialoge for channel ");
-        Serial.println(selectedSensorIndex + 1);
-        #endif
-      } else {
-        #ifdef DEBUG_SERIAL
-        Serial.println("Cannot start channel configuration (invalid channel selection)");
-        #endif
+      switch (selectedValue) {
+        case 1 : case 2: case 4: case 8: case 16: case 32: case 64: case 128:
+          selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
+          state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
+          LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
+          #ifdef DEBUG_SERIAL
+          Serial.print("Starting configuration dialoge for channel "); Serial.println(selectedSensorIndex + 1);
+          #endif
+          break;
+        case 3:
+          // Dump configuration
+          dumpSensorConfiguration();
+          break;
+        case 7:
+          // Transmit test outout on all channels
+          for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
+            scratch.setInstance(i); scratch.setSource(i); scratch.setSetTemperature(i); scratch.setTemperature(i);
+            transmitPgn130316(scratch);
+            delay(MINIMUM_TRANSMIT_CYCLE);
+          }
+          break;
+        case 15: 
+          // Foctory reset - delete all channel configurations
+          for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
+            SENSORS[i].setInstance(255);
+            SENSORS[i].save(SENSORS_EEPROM_ADDRESS + (i * SENSORS[i].getConfigSize()));
+          }
+          state = cancelConfigurationTimeout();
+          #ifdef DEBUG_SERIAL
+          Serial.println("All channel configurations have been deleted");
+          #endif
+          break;
+        default:
+          // Unrecognised entry
+          #ifdef DEBUG_SERIAL
+          Serial.println("Ignoring invalid entry");
+          #endif
+          break;
       }
       break;
     case CHANGE_CHANNEL_INSTANCE:
