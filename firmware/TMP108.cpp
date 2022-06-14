@@ -199,6 +199,7 @@ void processTransmitQueueMaybe();
 void performConfigurationTimeoutMaybe();
 
 enum MACHINE_STATES performMachineStateTransition(enum MACHINE_STATES state);
+void confirmDialogCompletion(int flashes);
 void transmitPgn130316(Sensor sensor);
 
 /**********************************************************************
@@ -512,6 +513,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
         case 32:
           // Dump configuration
           dumpSensorConfiguration();
+          confirmDialogCompletion(1);
           break;
         case 64:
           // Transmit test outout on all channels
@@ -523,6 +525,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
             Serial.print("Transmitting test PGN130316 with instance "); Serial.println(i);
             #endif
           }
+          confirmDialogCompletion(1);
           break;
         case 128: 
           // Foctory reset - delete all channel configurations
@@ -531,6 +534,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
             SENSORS[i].save(SENSORS_EEPROM_ADDRESS + (i * SENSORS[i].getConfigSize()));
           }
           state = cancelConfigurationTimeout();
+          confirmDialogCompletion(1);
           #ifdef DEBUG_SERIAL
           Serial.println("Deleting all channel configurations");
           #endif
@@ -548,7 +552,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
         SENSORS[selectedSensorIndex].setInstance(selectedValue);
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         state = cancelConfigurationTimeout();
-        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0);
+        confirmDialogCompletion(1);
         #ifdef DEBUG_SERIAL
         Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": deleting configuration");
         dumpSensorConfiguration();
@@ -599,10 +603,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
         SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedValue * 1000UL));
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         state = cancelConfigurationTimeout();
-        LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 3);
-        LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 3);
-        LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 3);
-        LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, 3);
+        confirmDialogCompletion(1);
         #ifdef DEBUG_SERIAL
         Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": transmission interval set to ");
         Serial.println(SENSORS[selectedSensorIndex].getTransmissionInterval());
@@ -624,15 +625,19 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
       #endif
       SENSORS[selectedSensorIndex].load(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
       state = cancelConfigurationTimeout();
-      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, 1);
-      LED_MANAGER.operate(GPIO_SOURCE_LED, 0, 1);
-      LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, 1);
-      LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, 1);
+      confirmDialogCompletion(0);
       break;
     default:
       break;
   }
   return(state);
+}
+
+void confirmDialogCompletion(int flashes) {
+      LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, flashes);
+      LED_MANAGER.operate(GPIO_SOURCE_LED, 0, flashes);
+      LED_MANAGER.operate(GPIO_SETPOINT_LED, 0, flashes);
+      LED_MANAGER.operate(GPIO_INTERVAL_LED, 0, flashes);
 }
 
 /**********************************************************************
