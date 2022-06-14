@@ -97,59 +97,89 @@ channels.
 A new installation will have no configured channels and so the PWR
 LED will flash just once.
 
-Single and multi-step configuration protocols are available: a step
-always involves setting up a configuration parameter on the PRG-VALUE
-DIL switch and then entering it by briefly pressing the PRG button.
+There are a handful of configuration "protocols" available, each of
+which implements a single configuration task.
+A protocol consists of one or more steps which must be performed in
+sequence.
+Each step always involves setting up a configuration parameter on the
+PRG-VALUE DIL switch and then entering it by briefly pressing the PRG
+button.
 
-There are two single-step, module-level, configuration options:
+After pressing PRG, you have 20 seconds to complete the subsequent step,
+otherwise the channel configuration is abandoned and you will have
+to start the protocol again.
+
+The LEDs D1 (INST), D2 (SRCE), D3 (SETP) and D4 (IVAL) help guide you
+through multi-step protocols: an LED flashes to indicate a particular
+value should be entered and becomes steady when an entry is entered and
+validated.
+When a mult-step protocol is successfully all four leds will flash
+together.
+
+### PROTOCOL 128: Clear Module EEPROM
+
+This is a single step 'hard-reset' protocol which deletes all existing
+module settings.
 
 | PRG-VALUE  | DIL switch |Description |
 |------------|------------|------------|
 | 128        | [10000000] | Clear module EEPROM (deleting all channel configuration) |
-| 64         | [01000000] | Transmit a dummy PGN130316 for each channel |
+
+### PROTOCOL 64: Transmit Test Messages
+
+This is a single step protocol which transmits a single, dummy, PGN
+130316 message for each sensor channel.
+Helpful in confirming that the module and its NMEA bus connection are
+operating.
+
+| PRG-VALUE  | DIL switch |Description |
+|------------|------------|------------|
+| 64         | [01000000] | Transmit a single, dummy, PGN 130316 for each channel |
 
 If you have an NMEA bus monitor, it's a good idea to fire it up and
-use option 7 in the above table to transmit some test PGNs which you
-should be able to see on your bus monitor.
+use this protocol to transmit some test PGNs which you should be able to
+see on your bus monitor.
 
-Each sensor channel is configured using a multi-step protocol.
-After pressing PRG, you have 20 seconds to complete the subsequent step,
-otherwise the channel configuration is abandoned and you will have
-to start the protocol again.
-D1 (INST), D2 (SRCE), D3 (SETP) and D4 (IVAL) help guide tou through
-the protocol: the LED flashes to indicate a particular value should be
-entered and becomes steady when an entry is entered and validated.
+### PROTOCOL 1..8: Delete Sensor Channel
 
-The channel configuration protocol looks like this:
+This is a two-step protocol which deletes any existing configuration
+for a specified channel, preventing the channel's sensor data from being
+transmitted on the NMEA bus.
 
-1. Select the sensor channel to be configured, then
-2. Enter the temperature instance for this channel , then
-3. Enter the temperature source for this channel, then
-4. Enter the temperature set point for this channel, then
-5. Enter the transmission interval for this channel
+| PRG-VALUE  | DIL switch |Description |
+|------------|------------|------------|
+| 1..8       | [0000XXXX] | Sensor channel number of the configuration to be deleted. |
+| 255        | [11111111] | Delete sensor channel configuration. |
 
-Inevitably, there are some "gotchas" to look out for.
+### PROTOCOL 1..8: Configure Sensor Channel
 
-STEP 1. You select the sensor channel by setting the sensor channel
-address on PRG-VALUE.
-This must be a number in the range 1 through 8 to match the channel
-numbers printed on the PCB.
-If your entry is accepted D1 (INST) will start to flash and you can
-proceed to STEP 2.
+This five-step protocol configures a sensor channel and enables its
+transmission on the NMEA bus.
 
-STEP 2. The value you enter here must be either your chosen temperature
-instance number in the range 0..252 or the value 255  - other values are
-silently ignored.
-Using the value 255 will delete any existing configuration for the
-selected channel and end the protocol.
-In most situations it is simplest to just use the channel address you
-set up for STEP 1 as the instance address for STEP 2.
-If your entry is accepted D1 (INST) will go steady, D2 (SRCE) will start
-to flash and you can proceed to STEP 3.
+Its a good idea to refer to
+[this NMEA document](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf)
+which discusses the values you will need to enter.
 
+| PRG-VALUE       | DIL switch |Description |
+|-----------------|------------|------------|
+| 1..8            | [0000XXXX] | Sensor channel number of the channel to be configured. |
+| 0..252          | [XXXXXXXX] | NMEA temperature instance. |
+| 0..14, 129..252 | [XXXXXXXX] | NMEA temperature source. |
+| 1..255          | [XXXXXXXX] | Temperature set point divided by 2. |
+| 2..255          | [XXXXXXXX] | Transmission interval in seconds. |
 
-STEP 3. 
+There are some gotchas:
 
+It is usually sensible to set the temperature instance value to the
+sensor channel number, so STEP 2 simply becomes a press of PRG.
+
+The temperature set point is expressed in degrees Kelvin divided by
+two, so to configure a set point for 100C you need to enter
+(100 + 273) / 2 or 186 [10111010] (which is actually represents 99C).
+
+Consider reducing the transmission rate of a sensor as much as seems
+reasonable - usually temperature values change slowly and a 2s
+interval is just way too fast.
 
 
 
