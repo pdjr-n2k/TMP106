@@ -76,13 +76,16 @@ ensure correct orientation and polarity.
 The host NMEA bus can be wired directly to J3 or (and preferably)
 ENCLOSURE can be drilled to accommodate J4 and J4's flying leads
 connected to J3.
+A good position for J4 is directly over the bottom right-hand PCB
+mounting screw.
 
 D5 can be soldered with long leads and a hole drilled in the
 ENCLOSURE to expose the LED or, preferably, D5 can be mounted with
 CLIP to ENCLOSURE and trailing leads used to connect D5 back to
 the PCB mounting location.
 The latter approach means that exact positioning of the hole which
-exposes the PCB mounted LED is not required.
+exposes the PCB mounted LED is not required except, of course, that
+the LED must not foul a PCB component or cable path.
 
 ## Module configuration
 
@@ -93,11 +96,11 @@ Begin configuration by exposing the module PCB and performing any
 required hardware configuration before connecting the module to the
 host NMEA bus.
 
-The module will boot and confirm normal operation by flashing the
-PWR LED 1+*n* times, where *n* is the number of configured sensor
-channels.
-A new installation will have no configured channels and so the PWR
-LED will flash just once.
+The module will boot and the LED on the MCU will flash once.
+When the module is configured it will confirm normal operation by
+flashing the PWR LED *n* times, where *n* is the number of configured
+sensor channels, but in a new installation this will obviously not
+happen.
 
 You can now continue with firmware configuration which can only be
 done when the module is powered up.
