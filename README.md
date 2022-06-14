@@ -1,7 +1,7 @@
 # TMP108 - NMEA 2000 temperature sensor module
 
-This project implements hardware and firmware designs for an NMEA
-2000 sensor module that supports the connection of up to eight
+**TMP108** is an NMEA 2000 sensor module that supports the connection
+of up to eight
 [National Semiconductor LM335Z](https://datasheet.octopart.com/LM335Z-NOPB-Texas-Instruments-datasheet-7836729.pdf)
 temperature sensors.
 
@@ -123,16 +123,17 @@ Each step always involves setting up a configuration parameter on the
 PRG-VALUE DIL switch and then entering it by briefly pressing the PRG
 button.
 
-After pressing PRG, you have 20 seconds to complete the subsequent step,
-otherwise the channel configuration is abandoned and you will have
-to start the protocol again.
+In a multi-step After pressing PRG, you have 20 seconds to complete the subsequent step,
+otherwise the channel configuration is abandoned and the module reverts
+to normal operation: you will therefore, literally, have to go back to
+step one.
 
 The LEDs D1 (INST), D2 (SRCE), D3 (SETP) and D4 (IVAL) help guide you
 through multi-step protocols: an LED flashes to indicate a particular
 value should be entered and becomes steady when an entry is entered and
 validated.
-When a mult-step protocol is successfully all four leds will flash
-together.
+When a mult-step protocol is successfully completed all four leds will
+flash together.
 
 #### PROTOCOL 128: Clear Module EEPROM
 
