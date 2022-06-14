@@ -501,19 +501,19 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
   switch (state) {
     case NORMAL: // Start configuration process
       switch (selectedValue) {
-        case 1 : case 2: case 4: case 8: case 16: case 32: case 64: case 128:
-          selectedSensorIndex = (DIL_SWITCH.selectedSwitch() - 1);
+        case 1 : case 2: case 3: case 4: case 5: case 6: case 7: case 8:
+          selectedSensorIndex = selectedValue;
           state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
           LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
           #ifdef DEBUG_SERIAL
           Serial.print("Starting configuration dialoge for channel "); Serial.println(selectedSensorIndex + 1);
           #endif
           break;
-        case 3:
+        case 32:
           // Dump configuration
           dumpSensorConfiguration();
           break;
-        case 7:
+        case 64:
           // Transmit test outout on all channels
           for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
             scratch.setInstance(i); scratch.setSource(i); scratch.setSetPoint(i); scratch.setTemperature(i);
@@ -524,7 +524,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
             #endif
           }
           break;
-        case 15: 
+        case 128: 
           // Foctory reset - delete all channel configurations
           for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
             SENSORS[i].setInstance(255);
