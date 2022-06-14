@@ -321,7 +321,7 @@ F 3 "" H 10450 2550 50  0001 C CNN
 	1    10450 2550
 	0    -1   -1   0   
 $EndComp
-Text Label 4850 2700 2    50   ~ 0
+Text Label 4850 1700 2    50   ~ 0
 LED_PWR
 Text Label 10000 4950 0    50   ~ 0
 CAN_SCR
@@ -1010,7 +1010,7 @@ Text Label 900  4000 2    50   ~ 0
 TERM_A
 Text Label 1500 4000 0    50   ~ 0
 TERM_B
-Text Label 4850 1700 2    50   ~ 0
+Text Label 4850 2700 2    50   ~ 0
 LED_INTERVAL
 $Comp
 L Device:R R12
