@@ -128,7 +128,7 @@ In a multi-step protocol after pressing PRG, you have 20 seconds to
 complete the subsequent step, otherwise the protocol is abandoned and
 the module will revert to normal operation.
 
-The LEDs D1 INST (instance), SRCE (source), SETP (set-point) and IVAL
+The LEDs INST (instance), SRCE (source), SETP (set-point) and IVAL
 (transmission interval) help guide you through multi-step protocols
 that relate to channel configuration: an LED flashes to indicate that a
 particular value should be entered and becomes steady when an entry has
