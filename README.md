@@ -92,51 +92,49 @@ the LED must not foul a PCB component or cable path.
 It will almost always be simpler to configure the module on the bench
 and then install it in its normal operating location.
 
-Begin configuration by exposing the module PCB and performing any
-required hardware configuration before connecting the module to the
-host NMEA bus.
+Begin configuration by exposing the module PCB.
 
-The module will boot and the LED on the MCU will flash once.
-When the module is configured it will confirm normal operation by
-flashing the PWR LED *n* times, where *n* is the number of configured
-sensor channels, but in a new installation this will obviously not
-happen.
+Make sure that the module is properly terminated for its method of
+connection to the NMEA bus by performing any required hardware
+configuration (see below).
 
-You can now continue with firmware configuration which can only be
-done when the module is powered up.
+Connect the module to the host NMEA bus: the module will boot and the
+PWR LED will flash once.
+
+You can now continue with firmware configuration.
 
 ### Hardware configuration
 
-SW2 [T] allows a 120 Ohm terminating resistor to be connected across
-the NMEA data bus.
-Switch this OFF if you install the module via a T-connector and drop
-cable or switch it ON if you install the module as a terminating
-device on the bus backbone.
+The BUS switch labelled 'T' allows a 120 Ohm terminating resistor to be
+connected across the NMEA data bus.
+Switch BUS.T OFF if you install the module via a T-connector and drop
+cable or switch it ON if you install the module as a terminating device
+on your NMEA bus backbone.
 
-SW2 [G] allows connects the bus shield to the module GND when it is
-in the ON position.
+The BUS switch lagelled 'G' connects the NMEA bus shield to the module
+GND when it is in the ON position.
+Usually it is appropriate to leave this OFF.
 
 ### Firmware configuration
 
-There are a handful of configuration "protocols" available, each of
-which implements a single configuration task.
-A protocol consists of one or more steps which must be performed in
-sequence.
-Each step always involves setting up a configuration parameter on the
-PRG-VALUE DIL switch and then entering it by briefly pressing the PRG
-button.
+The module is configured by the application of one or more *protocol*s
+each of which defines the sequence of user actions required to perform
+a single configuration task.
+A protocol consists of one or more *step*s, where each step involves
+setting up a configuration parameter on the PRG-VALUE DIL switch and
+then entering it by briefly pressing the PRG button.
 
-In a multi-step After pressing PRG, you have 20 seconds to complete the subsequent step,
-otherwise the channel configuration is abandoned and the module reverts
-to normal operation: you will therefore, literally, have to go back to
-step one.
+In a multi-step protocol after pressing PRG, you have 20 seconds to
+complete the subsequent step, otherwise the protocol is abandoned and
+the module will revert to normal operation.
 
-The LEDs D1 (INST), D2 (SRCE), D3 (SETP) and D4 (IVAL) help guide you
-through multi-step protocols: an LED flashes to indicate a particular
-value should be entered and becomes steady when an entry is entered and
-validated.
-When a mult-step protocol is successfully completed all four leds will
-flash together.
+The LEDs D1 INST (instance), SRCE (source), SETP (set-point) and IVAL
+(transmission interval) help guide you through multi-step protocols
+that relate to channel configuration: an LED flashes to indicate that a
+particular value should be entered and becomes steady when an entry has
+been made and validated.
+When a protocol is successfully completed all four leds will flash
+together.
 
 #### PROTOCOL 128: Clear Module EEPROM
 
@@ -151,26 +149,25 @@ module settings.
 
 This is a single step protocol which transmits a single, dummy, PGN
 130316 message for each sensor channel.
-Helpful in confirming that the module and its NMEA bus connection are
-operating.
+This is helpful in confirming that the module and its NMEA bus
+connection are operating.
 
 | PRG-VALUE  | DIL switch |Description |
 |------------|------------|------------|
 | 64         | [01000000] | Transmit a single, dummy, PGN 130316 for each channel |
 
-If you have an NMEA bus monitor, it's a good idea to fire it up and
-use this protocol to transmit some test PGNs which you should be able to
+If you have an NMEA bus monitor, it's a good idea to fire it up and use
+this protocol to transmit some test PGNs which you should be able to
 see on your bus monitor.
 
 #### PROTOCOL 1..8: Delete Sensor Channel
 
 This is a two-step protocol which deletes any existing configuration
-for a specified channel, preventing the channel's sensor data from being
-transmitted on the NMEA bus.
+for a specified channel.
 
 | PRG-VALUE  | DIL switch |Description |
 |------------|------------|------------|
-| 1..8       | [0000XXXX] | Sensor channel number of the configuration to be deleted. |
+| 1..8       | [0000XXXX] | Number of the sensor channel that should be deleted. |
 | 255        | [11111111] | Delete sensor channel configuration. |
 
 #### PROTOCOL 1..8: Configure Sensor Channel
@@ -184,51 +181,51 @@ which discusses the values you will need to enter.
 
 | PRG-VALUE       | DIL switch |Description |
 |-----------------|------------|------------|
-| 1..8            | [0000XXXX] | Sensor channel number of the channel to be configured. |
+| 1..8            | [0000XXXX] | Number of the sensor channel to be configured. |
 | 0..252          | [XXXXXXXX] | NMEA temperature instance. |
 | 0..14, 129..252 | [XXXXXXXX] | NMEA temperature source. |
-| 1..255          | [XXXXXXXX] | Temperature set point divided by 2. |
+| 1..255          | [XXXXXXXX] | NMEA temperature set point divided by 2. |
 | 2..255          | [XXXXXXXX] | Transmission interval in seconds. |
 
-There are some gotchas:
+Some things to consider:
 
-It is usually sensible to set the temperature instance value to the
-sensor channel number, so STEP 2 simply becomes a press of PRG.
+1. It is usually sensible to set the temperature instance value to the
+   sensor channel number, so STEP 2 simply becomes a press of PRG.
 
-The temperature set point is expressed in degrees Kelvin divided by
-two, so to configure a set point for 100C you need to enter
-(100 + 273) / 2 or 186 [10111010] (which is actually represents 99C).
+2. The temperature set point is expressed in degrees Kelvin divided by
+   two, so to configure a set point for 100C you need to enter
+   (100 + 273) / 2 or 186 [10111010] (actually setting represents 99C).
 
-Consider reducing the transmission rate of a sensor as much as seems
-reasonable - usually temperature values change slowly.
-Compliance with the NMEA specification means that no more than three
-sensor channels can be used at the minimum transmission interval of
-2s without consequent data loss.
+3. Consider reducing the transmission rate of a sensor as much as seems
+   reasonable and so avoid consuming bus bandwidth unnecessarily.
+   Usually, real world temperature values change slowly.
+
+   Compliance with the NMEA specification means that no more than three
+   sensor channels can be used at the minimum transmission interval of
+   2s without consequent data loss.
 
 ## Temperature sensors
 
-The TMP108 module supports a maximum of eight LM335Z or equivalent
+The TMP108 module supports a maximum of eight
+[LM335Z][(https://www.st.com/resource/en/datasheet/lm335.pdf)
 temperature sensor ICs.
-The LM335Z sensor IC is packaged in a TO-92 housing and has the
-following pin layout.
-
-Pin 1 - calibrate (not used by TMP108)
-Pin 2 - supply (P)
-Pin 3 - ground (G)
-
 Other types of temperature sensor cannot be used and connecting them
 to a TMP108 module will almost certainly damage the module beyond
 repair.
 
-LM335Z-based temperature sensors are commercially available (for
-example from Victron) or you can easily make your own sensor.
+LM335Z-based temperature sensors packaged for marine use are
+commercially available, but you can easily (and inexpensively) make
+your own sensor and one method I have used is described below.
 
 ### Making a bolt-on temperature sensor
 
-You will require an LM335Z IC, a length of two-core cable with 0.5mm2
-conductors, a ring terminal with a hole size that suits your mounting
-needs and a minimum 10mm2 cable capacity and some silicone sealer or
-potting compound.
+You will require an LM335Z IC in a TO-92 package, a length of two-core
+cable with 0.5mm2 colour-coded conductors (two-core telephone cable
+works well), a minimum 10mm2 ring terminal with a hole size that suits
+your mounting needs and some silicone sealer or other potting compound.
+
+Consult the data sheet referenced above to determine the pin layout of
+your sensor IC.
 
 1. Remove the calibrate pin from the LM335Z by cutting or breaking it
    off as close to the IC body as possible.
