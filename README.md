@@ -207,7 +207,7 @@ Some things to consider:
 ## Temperature sensors
 
 The TMP108 module supports a maximum of eight
-[LM335Z][(https://www.st.com/resource/en/datasheet/lm335.pdf)
+[LM335Z](https://www.st.com/resource/en/datasheet/lm335.pdf)
 temperature sensor ICs.
 Other types of temperature sensor cannot be used and connecting them
 to a TMP108 module will almost certainly damage the module beyond
