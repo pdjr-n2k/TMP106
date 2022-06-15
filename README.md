@@ -80,9 +80,9 @@ A good position for J4 is directly over the bottom right-hand PCB
 mounting screw.
 
 D5 can be soldered with long leads and a hole drilled in the
-ENCLOSURE to expose the LED or, preferably, D5 can be mounted with
-CLIP to ENCLOSURE and trailing leads used to connect D5 back to
-the PCB mounting location.
+ENCLOSURE to expose the LED or (and preferably) preferably, D5 can
+be mounted with CLIP to ENCLOSURE and trailing leads used to
+connect D5 back to the PCB mounting location.
 The latter approach means that exact positioning of the hole which
 exposes the PCB mounted LED is not required except, of course, that
 the LED must not foul a PCB component or cable path.
