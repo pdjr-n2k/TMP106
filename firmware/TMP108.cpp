@@ -372,10 +372,10 @@ void loop() {
 
 /**********************************************************************
  * processSensorsMaybe() should be called directly from loop(). The
- * function iterates through all sensors and if it finds an enabled
- * sensor whose transmission interval has expired then it updates the
- * sensor temperature from the ADC and queues the sensor index in
- * TRANSMIT_QUEUE for subsequent transmission on the N2K bus.
+ * function iterates through all sensors looking for any that have an
+ * expired transmission. Sunch sensors have their temperature value
+ * updated bt a read from the ADC and their index queued for subsequent
+ * transmission on the N2K bus.
  */
 void processSensorsMaybe() {
   unsigned long now = millis();
