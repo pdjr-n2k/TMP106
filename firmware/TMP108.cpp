@@ -2,26 +2,27 @@
  * tsense-1.0.0.cpp - TSENSE firmware version 1.0.0.
  * Copyright (c) 2021 Paul Reeve, <preeve@pdjr.eu>
  *
- * This firmware provides an 8-channel temperature senor interface
- * that reports sensor state over NMEA 2000 using PGN 130316
- * Temperature, Extended Range.
+ * This firmware for a Teensy 3.2 MCU implements an 8-channel
+ * temperature sensor interface that reports sensor state over NMEA
+ * 2000 using PGN 130316 Temperature, Extended Range.
  * 
- * The firmware supports LM335Z sensors.
+ * The firmware supports LM335Z temperature sensors.
  * 
- * The module operates as simple state machine whose states are defined
- * by the MACHINE_STATES enum. At any one time the device is in a state
- * recorded in MACHINE_STATE: either its NORMAL state (in which it is
- * reading sensor data and transmitting it over NMEA), or one of a
- * handful of CONFIG_ states associated with user-mediated
- * confiduration of the module.
+ * The firmware is designed as a simple state machine. At any one time
+ * the device is in either its NORMAL or production state (in which it
+ * is reading sensor data and transmitting it over NMEA), or in one of
+ * a handful of configuration states associated with user-mediated
+ * configuration of the module.
  * 
- * State transition from NORMAL into a CONFIG_ state and transition
- * between CONFIG_ states is triggered by a press of the module's PRG
- * button.
+ * State transition from production into a configuration  state and
+ * transition between configuration states is triggered by a debounced
+ * signal on an MCU input pin which will typically be connected to a
+ * momentary push button.
  * 
- * Transition back to the NORMAL state results from either the
- * user successfully advancing through and completing the configuration
- * protocol or by the protocol timing out.
+ * Transition back to the productions state derivess from either the
+ * user successfully advancing through configuration states which are
+ * part of a configuration protocol or by an already invoked configuration
+ * protocol timing out.
  */
 
 #include <Arduino.h>
