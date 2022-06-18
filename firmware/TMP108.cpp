@@ -119,7 +119,6 @@
  * bump the unique number for every software build and this is done
  * automatically by the build system.
  */
-
 #define DEVICE_CLASS 75
 #define DEVICE_FUNCTION 130
 #define DEVICE_INDUSTRY_GROUP 4
@@ -132,7 +131,6 @@
  * This poorly structured set of values is what NMEA expects a product
  * description to be shoe-horned into.
  */
-
 #define PRODUCT_CERTIFICATION_LEVEL 1
 #define PRODUCT_CODE 002
 #define PRODUCT_FIRMWARE_VERSION "1.1.0 (Jun 2022)"
@@ -146,8 +144,9 @@
  * Include the build.h header file which can be used to override any or
  * all of the above  constant definitions.
  */
-
 #include "build.h"
+
+
 
 #define DEFAULT_SOURCE_ADDRESS 22         // Seed value for source address claim
 #define INSTANCE_UNDEFINED 255            // Flag value
@@ -249,8 +248,6 @@ Sensor SENSORS[ELEMENTCOUNT(SENSOR_PINS)];
 static MACHINE_STATES MACHINE_STATE = NORMAL;
 unsigned long CONFIGURATION_TIMEOUT_COUNTER = 0UL;
 
-
-
 /**********************************************************************
  * SID for clustering N2K messages by sensor process cycle.
  */
@@ -330,7 +327,6 @@ void setup() {
  * inputs until a newly started system has stabilised and the GPIO
  * inputs have been debounced.
  */ 
-
 void loop() {
   static bool JUST_STARTED = true;
 
