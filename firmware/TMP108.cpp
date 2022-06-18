@@ -178,9 +178,8 @@
  * appropriate transmit interval so that buffer overrun does not
  * become an issue.
  */
- 
-#define MINIMUM_TRANSMIT_INTERVAL 2000    // N2K defined fastest allowed transmit rate for a PGN instance
-#define MINIMUM_TRANSMIT_CYCLE 500        // N2K defined fastest allowed transmit cycle rate
+#define MINIMUM_TRANSMIT_INTERVAL 2000UL    // N2K defined fastest allowed transmit rate for a PGN instance
+#define MINIMUM_TRANSMIT_CYCLE 500UL        // N2K defined fastest allowed transmit cycle rate
 
 /**********************************************************************
  * This firmware operates as a state machine. At any moment in time the
@@ -605,7 +604,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
       #endif
       break;
     case CHANGE_CHANNEL_INTERVAL:
-      if (selectedValue >= 2) {
+      if (((unsigned long) 1000UL * selectedValue) >= MINIMUM_TRANSMIT_INTERVAL) {
         SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedValue * 1000UL));
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         state = cancelConfigurationTimeout();
