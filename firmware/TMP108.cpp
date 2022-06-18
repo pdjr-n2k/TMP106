@@ -52,22 +52,25 @@
 /**********************************************************************
  * MCU EEPROM (PERSISTENT) STORAGE
  * 
- * SOURCE_ADDRESS_EEPROM_ADDRESS: storage address for the device's
- * 1-byte N2K source address.
- * SENSORS_EEPROM_ADDRESS: storage address for SENSOR congigurations.
- * The length of this is variable, so make sure it remains as the last
- * item.
+ * Module configuration is persisted to Teensy EEPROM storage.
+ * 
+ * SOURCE_ADDRESS_EEPROM_ADDRESS is the storage address for the
+ * module's 1-byte N2K/CAN source address.
+ * 
+ * SENSORS_EEPROM_ADDRESS is the start address of storage used to hold
+ * SENSOR congigurations. The length of this area will vary if the
+ * Sensor ADT is redefined, so it is simplest to make sure the start
+ * address remains as the last item in storage.
  */
-
 #define SOURCE_ADDRESS_EEPROM_ADDRESS 0
 #define SENSORS_EEPROM_ADDRESS 1
 
 /**********************************************************************
  * MCU PIN DEFINITIONS
  * 
- * GPIO pin definitions for the Teensy 3.2 MCU
+ * GPIO pin definitions for the Teensy 3.2 MCU and some collections
+ * that can be used as array initialisers
  */
-
 #define GPIO_SETPOINT_LED 0
 #define GPIO_SOURCE_LED 1
 #define GPIO_INSTANCE_LED 2
@@ -146,10 +149,10 @@
 
 #include "build.h"
 
-#define DEFAULT_SOURCE_ADDRESS 22         // Seed value for address claim
+#define DEFAULT_SOURCE_ADDRESS 22         // Seed value for source address claim
 #define INSTANCE_UNDEFINED 255            // Flag value
-#define STARTUP_SETTLE_PERIOD 5000        // Wait this many ms before processing switch inputs
-#define SWITCH_PROCESS_INTERVAL 250       // Process switch inputs evety n ms
+#define STARTUP_SETTLE_PERIOD 5000        // Wait this many ms after boot before entering production
+#define SWITCH_PROCESS_INTERVAL 250       // Process switch inputs every n ms
 #define LED_MANAGER_HEARTBEAT 200         // Number of ms on / off
 #define LED_MANAGER_INTERVAL 10           // Number of heartbeats between repeats
 #define CONFIG_TIMEOUT_INTERVAL 20000     // Allow 20s to complete each programme step
@@ -177,7 +180,7 @@
  */
  
 #define MINIMUM_TRANSMIT_INTERVAL 2000    // N2K defined fastest allowed transmit rate for a PGN instance
-#define MINIMUM_TRANSMIT_CYCLE 500        // N2K defined fastest allowed transmit rate for this module.
+#define MINIMUM_TRANSMIT_CYCLE 500        // N2K defined fastest allowed transmit cycle rate
 
 /**********************************************************************
  * This firmware operates as a state machine. At any moment in time the
