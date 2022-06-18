@@ -1,28 +1,27 @@
 /**********************************************************************
- * tsense-1.0.0.cpp - TSENSE firmware version 1.0.0.
- * Copyright (c) 2021 Paul Reeve, <preeve@pdjr.eu>
+ * TMP108.cpp (c) 2021-22 Paul Reeve <preeve@pdjr.eu>
  *
- * This firmware for a Teensy 3.2 MCU implements an 8-channel
- * temperature sensor interface that reports sensor state over NMEA
- * 2000 using PGN 130316 Temperature, Extended Range.
+ * Target platform: Teensy 3.2
+ * Supported temperature sensors: LM335Z
  * 
- * The firmware supports LM335Z temperature sensors.
+ * This firmware implements an 8-channel temperature sensor interface
+ * that reports sensor state over NMEA 2000 using
+ * PGN 130316 Temperature, Extended Range.
  * 
  * The firmware is designed as a simple state machine. At any one time
- * the device is in either its NORMAL or production state (in which it
- * is reading sensor data and transmitting it over NMEA), or in one of
- * a handful of configuration states associated with user-mediated
- * configuration of the module.
+ * the device is in either its production state (in which it is reading
+ * sensor data and transmitting it over NMEA), or in one of a handful
+ * of configuration states associated with user-mediated configuration
+ * of the module.
  * 
- * State transition from production into a configuration  state and
- * transition between configuration states is triggered by a debounced
+ * Transition from production state into a configuration state and
+ * transitions between configuration states are triggered by a debounced
  * signal on an MCU input pin which will typically be connected to a
  * momentary push button.
  * 
- * Transition back to the productions state derivess from either the
- * user successfully advancing through configuration states which are
- * part of a configuration protocol or by an already invoked configuration
- * protocol timing out.
+ * Transition back to the production state derives from the user advancing
+ * through configuration states which are part of a configuration protocol
+ * or by a configuration protocol timing out.
  */
 
 #include <Arduino.h>
@@ -40,12 +39,15 @@
 /**********************************************************************
  * SERIAL DEBUG
  * 
- * Define DEBUG_SERIAL to enable debug messages on serial output.
+ * The firmware can be built so that it writes copious trace and debug
+ * data to the MCU's serial output by defining DEBUG_SERIAL. When the
+ * Teensy reboots it switches its USB port to serial emulation and it
+ * can take a few seconds for a connected host computer to recognise
+ * the switch: - DEBUG_SERIAL_START_DELAY introduces a delay that can
+ * be used to prevent loss of early debug output.
  */
-
 #define DEBUG_SERIAL
 #define DEBUG_SERIAL_START_DELAY 4000
-#define DEBUG_SERIAL_INTERVAL 1000UL
 
 /**********************************************************************
  * MCU EEPROM (PERSISTENT) STORAGE
