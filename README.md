@@ -118,35 +118,35 @@ Usually it is appropriate to leave this OFF.
 ### Firmware configuration
 
 The module is configured by the application of one or more *protocol*s
-each of which defines the sequence of user actions required to perform
-a single configuration task.
-A protocol consists of one or more *step*s, where each step involves
-setting up a configuration parameter on the PRG-VALUE DIL switch and
-then entering it by briefly pressing the PRG button.
+each of which defines a sequence of one or more *step*s that are
+required to perform a single configuration task.
+A step involves setting up a configuration parameter on the PRG-VALUE
+DIL switch and then entering it by briefly pressing the PRG button.
 
 In a multi-step protocol after pressing PRG, you have 20 seconds to
 complete the subsequent step, otherwise the protocol is abandoned and
 the module will revert to normal operation.
 
-The LEDs PWR (power), INST (instance), SRCE (source), SETP (set-point)
-and IVAL (transmission interval) help guide you through multi-step protocols
-that relate to channel configuration.
+The PWR LED and the user-interaction LEDs (INST, SRCE, SETP and IVAL
+help guide you through the multi-step protocols that relate to channel
+configuration.
 
 The PWR LED will flash one or more times after you press the PRG button.
 A single flash means that your entry has been successfuly validated or
-processed; more than one flash indicates an invalid value on PRG-VALUE -
-you should set up a new value on PRG-VALUE and press PRG to re-try your
-entry.
+processed whilst more than one flash indicates that you entered an
+invalid value on PRG-VALUE.
+In the latter case you should correct the error by setting a new value
+on PRG-VALUE and pressing PRG again to re-validate your entry.
 
-The other LEDs flash to indicate that a particular value should be entered
-and become steady when an entry has been accepted.
+The user-interaction LEDs flash to indicate whan a particular value should
+be entered and become steady when an entry has been accepted.
 When a protocol is successfully completed all four leds will flash
 together.
 
 #### PROTOCOL 128: Clear Module EEPROM
 
-This is a single step 'hard-reset' protocol which deletes all existing
-module settings.
+This single step protocol deletes all existing module settings, essentially
+performing a 'factory reset'.
 
 | PRG-VALUE  | DIL switch |Description |
 |------------|------------|------------|
@@ -156,21 +156,19 @@ module settings.
 
 This is a single step protocol which transmits a single, dummy, PGN
 130316 message for each sensor channel.
-This is helpful in confirming that the module and its NMEA bus
-connection are operating.
+This is especially helpful when commissioning a new installation
+since it allows you to use an NMEA monitor application or instrument
+to confirm that the module and its NMEA bus connection are operating
+without having to perform any channel configuration.
 
 | PRG-VALUE  | DIL switch |Description |
 |------------|------------|------------|
 | 64         | [01000000] | Transmit a single, dummy, PGN 130316 for each channel |
 
-If you have an NMEA bus monitor, it's a good idea to fire it up and use
-this protocol to transmit some test PGNs which you should be able to
-see on your bus monitor.
-
 #### PROTOCOL 1..8: Delete Sensor Channel
 
-This is a two-step protocol which deletes any existing configuration
-for a specified channel.
+This two-step protocol deletes any existing configuration for a
+specified channel.
 
 | PRG-VALUE  | DIL switch |Description |
 |------------|------------|------------|
