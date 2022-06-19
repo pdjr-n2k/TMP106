@@ -204,7 +204,7 @@ void performConfigurationTimeoutMaybe();
 
 enum MACHINE_STATES performMachineStateTransition(enum MACHINE_STATES state);
 void confirmDialogCompletion(int flashes);
-void transmitPgn130316(Sensor sensor);
+void transmitPgn130316(Sensor sensor, bool flash = true);
 
 /**********************************************************************
  * PGNs of messages transmitted by this program.
@@ -506,6 +506,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
         case 1 : case 2: case 3: case 4: case 5: case 6: case 7: case 8:
           selectedSensorIndex = selectedValue;
           state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
           #ifdef DEBUG_SERIAL
           Serial.print("Starting configuration dialoge for channel "); Serial.println(selectedSensorIndex + 1);
@@ -513,34 +514,36 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
           break;
         case 32:
           // Dump configuration
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           dumpSensorConfiguration();
           confirmDialogCompletion(1);
           break;
         case 64:
           // Transmit test outout on all channels
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
             scratch.setInstance(i); scratch.setSource(i); scratch.setSetPoint(i); scratch.setTemperature(i);
-            transmitPgn130316(scratch);
+            transmitPgn130316(scratch, false);
             delay(MINIMUM_TRANSMIT_CYCLE);
             #ifdef DEBUG_SERIAL
             Serial.print("Transmitting test PGN130316 with instance "); Serial.println(i);
             #endif
           }
-          confirmDialogCompletion(1);
           break;
         case 128: 
           // Foctory reset - delete all channel configurations
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
             SENSORS[i].setInstance(255);
             SENSORS[i].save(SENSORS_EEPROM_ADDRESS + (i * SENSORS[i].getConfigSize()));
           }
           state = cancelConfigurationTimeout();
-          confirmDialogCompletion(1);
           #ifdef DEBUG_SERIAL
           Serial.println("Deleting all channel configurations");
           #endif
           break;
         default:
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           // Unrecognised entry
           #ifdef DEBUG_SERIAL
           Serial.println("Ignoring invalid entry");
@@ -549,32 +552,51 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
       }
       break;
     case CHANGE_CHANNEL_INSTANCE:
-      if (selectedValue == 255) {
-        SENSORS[selectedSensorIndex].setInstance(selectedValue);
-        SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
-        state = cancelConfigurationTimeout();
-        confirmDialogCompletion(1);
-        #ifdef DEBUG_SERIAL
-        Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": deleting configuration");
-        dumpSensorConfiguration();
-        #endif
-      } else if (selectedValue < 253) {
-        SENSORS[selectedSensorIndex].setInstance(selectedValue);
-        state = extendConfigurationTimeout(CHANGE_CHANNEL_SOURCE);
-        LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
-        LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
-        #ifdef DEBUG_SERIAL
-        Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": temperature instance set to ");
-        Serial.println(SENSORS[selectedSensorIndex].getInstance());
-        #endif
-      } else {
-        #ifdef DEBUG_SERIAL
-        Serial.println("Rejecting invalid temperature instance");
-        #endif
+      switch (selectedValue) {
+        case 255:
+          // Disable channel configuration
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
+          SENSORS[selectedSensorIndex].setInstance(selectedValue);
+          SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
+          state = cancelConfigurationTimeout();
+          #ifdef DEBUG_SERIAL
+          Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": deleting configuration");
+          dumpSensorConfiguration();
+          #endif
+          break;
+        case 254: case 253:
+          // Invalid entry
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 2);
+          state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
+          #ifdef DEBUG_SERIAL
+          Serial.print("Rejecting invalid temperature instance");
+          #endif
+          break;
+        default:
+          // Accept valid instance value
+          if (!instanceInUse(selectedSensorIndex, selectedValue)) { 
+            LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
+            SENSORS[selectedSensorIndex].setInstance(selectedValue);
+            state = extendConfigurationTimeout(CHANGE_CHANNEL_SOURCE);
+            LED_MANAGER.operate(GPIO_INSTANCE_LED, 1);
+            LED_MANAGER.operate(GPIO_SOURCE_LED, 0, -1);
+            #ifdef DEBUG_SERIAL
+            Serial.print("Channel "); Serial.print(selectedSensorIndex + 1); Serial.print(": temperature instance set to ");
+            Serial.println(SENSORS[selectedSensorIndex].getInstance());
+            #endif
+          } else {
+            LED_MANAGER.operate(GPIO_POWER_LED, 0, 3);
+            state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
+            #ifdef DEBUG_SERIAL
+            Serial.print("Rejecting duplicate temperature instance");
+            #endif
+          }
+          break;
       }
       break;
     case CHANGE_CHANNEL_SOURCE:
-      if ((selectedValue < 16) || ((selectedValue > 127) && (selectedValue < 253))) {
+      if ((selectedValue <= 14) || ((selectedValue >= 129) && (selectedValue <= 252))) {
+        LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
         SENSORS[selectedSensorIndex].setSource(selectedValue);
         state = extendConfigurationTimeout(CHANGE_CHANNEL_SETPOINT);
         LED_MANAGER.operate(GPIO_SOURCE_LED, 1);
@@ -584,12 +606,15 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
         Serial.println(SENSORS[selectedSensorIndex].getSource());
         #endif
       } else {
+        LED_MANAGER.operate(GPIO_POWER_LED, 0, 2);
+        state = extendConfigurationTimeout(CHANGE_CHANNEL_SOURCE);
         #ifdef DEBUG_SERIAL
         Serial.print("Rejecting invalid temperature source");
         #endif
       }
       break;
     case CHANGE_CHANNEL_SETPOINT:
+      LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
       SENSORS[selectedSensorIndex].setSetPoint((double) (selectedValue * 2));
       state = extendConfigurationTimeout(CHANGE_CHANNEL_INTERVAL);
       LED_MANAGER.operate(GPIO_SETPOINT_LED, 1);
@@ -601,6 +626,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
       break;
     case CHANGE_CHANNEL_INTERVAL:
       if (((unsigned long) 1000UL * selectedValue) >= MINIMUM_TRANSMIT_INTERVAL) {
+        LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
         SENSORS[selectedSensorIndex].setTransmissionInterval((unsigned long) (selectedValue * 1000UL));
         SENSORS[selectedSensorIndex].save(SENSORS_EEPROM_ADDRESS + (selectedSensorIndex * SENSORS[selectedSensorIndex].getConfigSize()));
         state = cancelConfigurationTimeout();
@@ -612,6 +638,8 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
         dumpSensorConfiguration();
         #endif
       } else {
+        LED_MANAGER.operate(GPIO_POWER_LED, 0, 2);
+        state = extendConfigurationTimeout(CHANGE_CHANNEL_INTERVAL);
         #ifdef DEBUG_SERIAL
         Serial.print("Rejecting invalid transmission interval");
         #endif
@@ -634,6 +662,16 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
   return(state);
 }
 
+bool instanceInUse(unsigned int ignoreIndex, unsigned char instance) {
+  bool retval = false;
+  for (unsigned iny i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
+    if ((ignoreIndex != 255) && (i != ignoreIndex))
+      if (SENSORS[i].getInstance() == instance)
+        retval = true;
+  }
+  return(retval);
+}
+
 void confirmDialogCompletion(int flashes) {
       LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, flashes);
       LED_MANAGER.operate(GPIO_SOURCE_LED, 0, flashes);
@@ -645,11 +683,11 @@ void confirmDialogCompletion(int flashes) {
  * Transmit the temperature data in <sensor> over the host NMEA bus and
  * flash the power LED to indicate it has been done. 
  */
-void transmitPgn130316(Sensor sensor) {
+void transmitPgn130316(Sensor sensor, bool flash) {
   tN2kMsg N2kMsg;
   SetN2kPGN130316(N2kMsg, SID, sensor.getInstance(), sensor.getSource(), sensor.getTemperature(), sensor.getSetPoint());
   NMEA2000.SendMsg(N2kMsg);
-  LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
+  if (flash) LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
 }  
 
 /**********************************************************************

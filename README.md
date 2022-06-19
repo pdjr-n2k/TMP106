@@ -128,11 +128,18 @@ In a multi-step protocol after pressing PRG, you have 20 seconds to
 complete the subsequent step, otherwise the protocol is abandoned and
 the module will revert to normal operation.
 
-The LEDs INST (instance), SRCE (source), SETP (set-point) and IVAL
-(transmission interval) help guide you through multi-step protocols
-that relate to channel configuration: an LED flashes to indicate that a
-particular value should be entered and becomes steady when an entry has
-been made and validated.
+The LEDs PWR (power), INST (instance), SRCE (source), SETP (set-point)
+and IVAL (transmission interval) help guide you through multi-step protocols
+that relate to channel configuration.
+
+The PWR LED will flash one or more times after you press the PRG button.
+A single flash means that your entry has been successfuly validated or
+processed; more than one flash indicates an invalid value on PRG-VALUE -
+you should set up a new value on PRG-VALUE and press PRG to re-try your
+entry.
+
+The other LEDs flash to indicate that a particular value should be entered
+and become steady when an entry has been accepted.
 When a protocol is successfully completed all four leds will flash
 together.
 
