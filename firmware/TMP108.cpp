@@ -504,9 +504,9 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
     case NORMAL: // Start configuration process
       switch (selectedValue) {
         case 1 : case 2: case 3: case 4: case 5: case 6: case 7: case 8:
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           selectedSensorIndex = selectedValue;
           state = extendConfigurationTimeout(CHANGE_CHANNEL_INSTANCE);
-          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           LED_MANAGER.operate(GPIO_INSTANCE_LED, 0, -1);
           #ifdef DEBUG_SERIAL
           Serial.print("Starting configuration dialoge for channel "); Serial.println(selectedSensorIndex + 1);
@@ -543,8 +543,8 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
           #endif
           break;
         default:
-          LED_MANAGER.operate(GPIO_POWER_LED, 0, 1);
           // Unrecognised entry
+          LED_MANAGER.operate(GPIO_POWER_LED, 0, 2);
           #ifdef DEBUG_SERIAL
           Serial.println("Ignoring invalid entry");
           #endif
