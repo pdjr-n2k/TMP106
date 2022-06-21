@@ -662,6 +662,12 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
   return(state);
 }
 
+/**********************************************************************
+ * instanceInUse() scans the SENSORS array, excluding the sensor
+ * defined by <ignoreIndex>, looking for any sensor using <instance> as
+ * its instance address. Returns true if a sensor is found, otherwise
+ * false.
+ */
 bool instanceInUse(unsigned int ignoreIndex, unsigned char instance) {
   bool retval = false;
   for (unsigned iny i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
