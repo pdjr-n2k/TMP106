@@ -127,9 +127,8 @@ In a multi-step protocol after pressing PRG, you have 20 seconds to
 complete the subsequent step, otherwise the protocol is abandoned and
 the module will revert to normal operation.
 
-The PWR LED and the user-interaction LEDs (INST, SRCE, SETP and IVAL
-help guide you through the multi-step protocols that relate to channel
-configuration.
+The LEDs PWR, INST, SRCE, SETP and IVAL help guide you through each
+protocol.
 
 The PWR LED will flash one or more times after you press the PRG button.
 A single flash means that your entry has been successfuly validated or
