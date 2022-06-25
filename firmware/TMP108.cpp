@@ -1,12 +1,13 @@
 /**********************************************************************
- * TMP108.cpp (c) 2021-22 Paul Reeve <preeve@pdjr.eu>
+ * TMP108.cpp - 8-channel NMEA temperature sensor module firmware.
+ * Copyright (c) 2021-22 Paul Reeve <preeve@pdjr.eu>
  *
  * Target platform: Teensy 3.2
  * Supported temperature sensors: LM335Z
  * 
  * This firmware implements an 8-channel temperature sensor interface
- * that reports sensor state over NMEA 2000 using
- * PGN 130316 Temperature, Extended Range.
+ * that reports sensor state over NMEA 2000 using PGN 130316
+ * Temperature, Extended Range.
  * 
  * The firmware is designed as a simple state machine. At any one time
  * the device is in either its production state (in which it is reading
@@ -15,13 +16,13 @@
  * of the module.
  * 
  * Transition from production state into a configuration state and
- * transitions between configuration states are triggered by a debounced
- * signal on an MCU input pin which will typically be connected to a
- * momentary push button.
+ * transitions between configuration states are triggered by a
+ * debounced signal on an MCU input pin which will typically be
+ * connected to a momentary push button.
  * 
- * Transition back to the production state derives from the user advancing
- * through configuration states which are part of a configuration protocol
- * or by a configuration protocol timing out.
+ * Transition back to the production state derives from the user
+ * advancing through configuration states to protocol completion or by
+ * a configuration protocol timing out.
  */
 
 #include <Arduino.h>
