@@ -201,6 +201,7 @@ void processSensorsMaybe();
 void processProgrammeSwitchMaybe();
 void processTransmitQueueMaybe();
 void performConfigurationTimeoutMaybe();
+bool instanceInUse(unsigned int ignoreIndex, unsigned char instance);
 
 enum MACHINE_STATES performMachineStateTransition(enum MACHINE_STATES state);
 void confirmDialogCompletion(int flashes);
@@ -670,7 +671,7 @@ MACHINE_STATES performMachineStateTransition(MACHINE_STATES state) {
  */
 bool instanceInUse(unsigned int ignoreIndex, unsigned char instance) {
   bool retval = false;
-  for (unsigned iny i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
+  for (unsigned int i = 0; i < ELEMENTCOUNT(SENSORS); i++) {
     if ((ignoreIndex != 255) && (i != ignoreIndex))
       if (SENSORS[i].getInstance() == instance)
         retval = true;
