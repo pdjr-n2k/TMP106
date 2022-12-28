@@ -1,3 +1,4 @@
 (sym_lib_table
-  (lib (name pdjr)(type Legacy)(uri /home/preeve/Projects/git/n2k-modules/pdjr-libraries/pdjr.lib)(options "")(descr ""))
+  (lib (name pdjr)(type Legacy)(uri ${USER_SYMBOL_DIR}/pdjr.lib)(options "")(descr ""))
+  (lib (name TMP108-rescue)(type Legacy)(uri ${KIPRJMOD}/TMP108-rescue.lib)(options "")(descr ""))
 )
