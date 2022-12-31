@@ -42,6 +42,57 @@ ratio is fixed.
 
 ## Module configuration
 
+Every DS18B20 temperature sensor IC is identified by a unique hardware
+address.
+This hardware address is used to associate a physical sensor with one
+of the module's six logical sensor channels through a process called
+*registration*.
+
+If a DS18B20 fails or is no longer required for service with TMP106
+then it should be de-registered to free-up the associated sensor
+channel for possible future use with another device.
+
+### Checking sensor registration and presence
+
+1. Enter the value 0x00 into the ADDR/VALUE DIL switch.
+2. Press and release the PRG button.
+
+Channel LEDs 1 through 6 will flash if a DS18B20 is registered on that
+sensor channel.
+Each LED will illuminate steadily if the sensor registered to that
+channel is connected and working.
+
+### Registering a sensor with a particular channel
+
+There is a one-to-one mapping between DS18B20 addresses and sensor
+channels: if you want to associate an already registered DS18B20 then
+you must delete the existing registration (see below) first.
+
+To register a sensor:
+
+1. Connect the new a DS18B20 device to an unoccupied sensor terminal
+   block.
+2. Enter the number of the sensor channel to which the device should
+   be associated into the ADDR/VALUE DIL switch.
+3. Press and release the PRG button.
+
+The selected sensor LED will flash repeatedly whilst the sensor
+bus is scanned for the new device and revert to steady illumination
+once the registration is complete and the DS18B20 is active.
+If the DS18B20 cannot be registered then the associated channel sensor
+LED will switch OFF.
+
+### De-registering a sensor
+
+1. Enter the number of the channel multiplied by 16 into to ADDR/VALUE
+   DIL switch.
+   This will be one of the values 0x10, 0x20, 0x30, 0x40, 0x50 or 0x60.
+2. Press and release the PRG button.
+
+
+
+Once a hardware address is associated with a logical sensor the  registered
+
 **TMP106** understands the following configuration parameters.
 
 | Address | Name                             | Default value | Description |
