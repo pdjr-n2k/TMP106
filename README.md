@@ -26,7 +26,51 @@ environmental temperature and electrical noise.
 Twenty metres should be feasible in all situation.
 
 Readings from connected sensors are transmitted over NMEA 2000 using 
-[PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
+
+## Temperature reporting
+
+**TMP106** uses the NMEA 2000 temperature reporting protocol
+[PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf)
+to report the temperature of each connected sensor.
+
+By default a cluster of temperature sensor reports is transmitted once
+every five seconds with a 0.5s interval between the reports for each
+connected sensor.
+This 10:1 cluster-transmission-interval:sensor-transmission-interval
+within a cluster is fixed, but he default cluster transmission interval
+can be overriden by the user.
+
+## Module configuration
+
+**TMP106** understands the following configuration parameters.
+
+| Address | Name                             | Default value | Description |
+| :---:   | :---                             | :---:         | :--- |
+| 0x01    | MODULE INSTANCE NUMBER           | 0xFF          | This parameter must be assigned a value in the range 0 through 252. |
+| 0x02    | PGN 130316 TRANSMISSION INTERVAL | 0x04          | Basic transmission interval in seconds. |
+
+The module uses the basic configuration mechanism provided by NOP100
+and must be configured with a module instance number before use.
+
+### Setting the module's instance number
+
+Enter the module instance number you wish to use on the ADDR/VALUE DIL
+switch a press and release the PRG button.
+The module will immediately begin transmitting tempersture sensor report
+messages on the new instance number.
+
+Select your instance number with care: the number used must not be in
+use by any other temperature sensor module on the host NMEA bus and
+must be in the range 0 through 252.
+
+You can disable the module by setting its instance number to 0xff.
+
+Setting the module's default transmission interval
+In most cases the default transmission interval of four seconds will not need to be altered. The NMEA 2000 specification dictates an appropriate transmission frequency range for PGN 127501 and it is sensible to respect this constraint.
+
+If you do wish to change the rate, then enter the value 0x02 on the ADDR/VALUE DIL switch and press and hold the PRG button for two seconds and then release. The module's transmit LED will begin to flash rapidly. Enter your required transmission interval in seconds on the ADDR/VALUE DIL switch and press and release PRG. The new transmission rate will be applied the next time the module is power cycled.
+
+
 
 ## State of development
 
