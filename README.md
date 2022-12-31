@@ -1,9 +1,22 @@
 # TMP108 - NMEA 2000 temperature sensor module
 
-**TMP108** is an NMEA 2000 sensor module that supports the connection
-of up to eight
+**TMP108** is a specialisation of
+[NOP100]()
+which implements a six channel temperature sensor module.
+
+The module presents on the NMEA bus as a device with Class Code 75
+(Sensor Communication Interface) and Function Code 130 (Temperature)
+and reports its status through transmission of PGN 130316 Temperature,
+Extended Range messages.
+
+The module is powered from the host NMEA bus and has an LEN of 1.0.
+
+## Temperature Sensors
+
+**TMP106** supoorts the connection of up to six 
 [National Semiconductor LM335Z](https://datasheet.octopart.com/LM335Z-NOPB-Texas-Instruments-datasheet-7836729.pdf)
 temperature sensors.
+Each sensor is electrically isolated from the host module
 
 Readings from connected sensors are transmitted over NMEA 2000 using 
 [PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
