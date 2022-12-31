@@ -15,17 +15,17 @@ Multiple **TMP106** modules can be installed on a single NMEA bus.
 
 ## Temperature Sensors
 
-**TMP106** supoorts the connection of up to six 
+**TMP106** suports the connection of up to six 
 [Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
 temperature sensors.
-Each sensor is electrically isolated from the host module.
+The module provides electrically isolated +5VDC, GND and data
+connections for each sensor.
+Two-wire (parasitic mode) operation of the DS18B20 is not supported.
 
-Each sensor requires a three-wire connection and the total maximum
-length of all connection wires is limited and depends somewhat on
-environmental temperature and electrical noise.
-Twenty metres should be feasible in all situation.
-
-Readings from connected sensors are transmitted over NMEA 2000 using 
+The total maximum length of all sensor connection wires is limited and
+depends somewhat on environmental temperature and electrical noise.
+Twenty metres total wire length should be feasible in all situations
+and use of twisted pair cable is recommended.
 
 ## Temperature reporting
 
@@ -36,9 +36,9 @@ to report the temperature of each connected sensor.
 By default a cluster of temperature sensor reports is transmitted once
 every five seconds with a 0.5s interval between the reports for each
 connected sensor.
-This 10:1 cluster-transmission-interval:sensor-transmission-interval
-within a cluster is fixed, but he default cluster transmission interval
-can be overriden by the user.
+The default cluster transmission interval can be overriden by the
+user, but the 10:1 cluster-transmission-interval:sensor-transmission-interval
+ratio is fixed. 
 
 ## Module configuration
 
@@ -46,22 +46,73 @@ can be overriden by the user.
 
 | Address | Name                             | Default value | Description |
 | :---:   | :---                             | :---:         | :--- |
-| 0x01    | MODULE INSTANCE NUMBER           | 0xFF          | This parameter must be assigned a value in the range 0 through 252. |
-| 0x02    | PGN 130316 TRANSMISSION INTERVAL | 0x04          | Basic transmission interval in seconds. |
+| 0x01    | AUTO CONFIGURE INSTANCE NUMBER   | 0xFF          | Starting number for automatic configuration of all sensor instance numbers. |
+| 0x02    | SENSOR 1 INSTANCE NUMBER         | 0xFF          | Instance number for sensor one. |
+| 0x03    | SENSOR 1 TRANSMISSION INTERVAL   | 0x04          | Transmission interval in seconds for sensor one. |
+| 0x04    | SENSOR 2 INSTANCE NUMBER         | 0xFF          | Instance number for sensor two. |
+| 0x05    | SENSOR 2 TRANSMISSION INTERVAL   | 0x04          | Transmission interval in seconds for sensor two. |
+| 0x06    | SENSOR 3 INSTANCE NUMBER         | 0xFF          | Instance number for sensor three. |
+| 0x07    | SENSOR 3 TRANSMISSION INTERVAL   | 0x08          | Transmission interval in seconds for sensor three. |
+| 0x08    | SENSOR 4 INSTANCE NUMBER         | 0xFF          | Instance number for sensor four. |
+| 0x09    | SENSOR 4 TRANSMISSION INTERVAL   | 0x08          | Transmission interval in seconds for sensor four. |
+| 0x0A    | SENSOR 5 INSTANCE NUMBER         | 0xFF          | Instance number for sensor five. |
+| 0x0B    | SENSOR 5 TRANSMISSION INTERVAL   | 0x0C          | Transmission interval in seconds for sensor five. |
+| 0x0C    | SENSOR 6 INSTANCE NUMBER         | 0xFF          | Instance number for sensor six. |
+| 0x0D    | SENSOR 6 TRANSMISSION INTERVAL   | 0x0C          | Transmission interval in seconds for sensor six. |
 
-The module uses the basic configuration mechanism provided by NOP100
-and must be configured with a module instance number before use.
+The module uses the basic configuration mechanism provided by NOP100.
+All sensors are disabled by default.
 
-### Setting the module's instance number
+### Setting sensor instance numbers
 
-Enter the module instance number you wish to use on the ADDR/VALUE DIL
-switch a press and release the PRG button.
-The module will immediately begin transmitting tempersture sensor report
-messages on the new instance number.
+To configure the instance number (and so enable) all six sensor
+channels en-masse using a block of six consecutive sensor instance
+numbers you should enter the instance number you wish to use for
+sensor one on the ADDR/VALUE DIL switch and press and release the
+PRG button.
+The number you specify (*n*) must be in the range 0..247 and none
+of the values in the range *n*..(*n* + 5) may be in use as the
+instance number of any temperature sensor on the host NMEA bus.
 
-Select your instance number with care: the number used must not be in
-use by any other temperature sensor module on the host NMEA bus and
-must be in the range 0 through 252.
+You can, of course, assign a particular instance number to an
+individual sensor.
+Simply enter the address of the sensor instance number on the
+ADDR/VALUE DIL switch and press and hold the PRG button for two
+seconds and then release.
+The module's transmit LED will begin to flash rapidly.
+Enter your required instance number in the range 0..252 on the
+ADDR/VALUE DIL switch and press and release PRG.
+The instance number you choose must not be in use as the instance
+number of another temperature sensor on the host NMEA bus.
+
+### Setting sensor transmission intervals
+
+Sensor transmission intervals are set in a similar way to sensor instance
+numbers by specifying an appropriate parameter address and value for
+the sensor channel transmission interval in seconds.
+The minimum valid transmission interval is 0x02.
+
+Note that the NMEA 2000 specification requires that modules transmitting
+PGN 130316 honour a 0.5s maximum transmission rate and that an individual
+sensor report is not transmitted more frequently than once every 2 seconds.
+ 
+These constraints raise a potential issue. If every sensor attempts to
+transmit at the maximum rate, then the 6 sensor reports be generated every
+two seconds whilst only four messages can actually be transmitted in the
+same time interval.
+Make sure that when you configure sensor channels you choose an
+appropriate transmit interval so that transmission overrun and
+possible data loss do not become an issue.
+
+
+
+The module will immediately begin transmitting tempersture sensor
+report messages for all connected sensors on their configured instance
+numbers.
+
+Select your instance numbers with care: the number used must not be
+in use by any other temperature sensor on the host NMEA bus and
+must be in the range 0 through 247.
 
 You can disable the module by setting its instance number to 0xff.
 
