@@ -13,17 +13,20 @@ The module is powered from the host NMEA bus and has an LEN of 1.0.
 
 Multiple **TMP106** modules can be installed on a single NMEA bus.
 
-
 ## Temperature Sensors
 
 **TMP106** supoorts the connection of up to six 
 [Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
 temperature sensors.
-Each sensor is electrically isolated from the host module
+Each sensor is electrically isolated from the host module.
+
+Each sensor requires a three-wire connection and the total maximum
+length of all connection wires is limited and depends somewhat on
+environmental temperature and electrical noise.
+Twenty metres should be feasible in all situation.
 
 Readings from connected sensors are transmitted over NMEA 2000 using 
 [PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf).
-
 
 ## State of development
 
