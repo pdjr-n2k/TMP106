@@ -1,18 +1,4 @@
-19422424288305107
-Audio_Module
-Reverb_BTDR-1H
-Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
-audio belton reverb
-0
-7
-7
-Audio_Module
-Reverb_BTDR-1V
-Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
-audio belton reverb
-0
-7
-7
+20036561748294908
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -60095,6 +60081,34 @@ DIL DIP PDIP 2.54mm 7.62mm 300mil
 4
 4
 PDJR-connectors
+879-1272_TERMINAL_HEADER_6-POLE
+
+
+0
+6
+6
+PDJR-connectors
+8971187_3_PIN_5MM_PLUGGABLE_HEADER
+
+
+0
+3
+3
+PDJR-connectors
+APAN-3105
+
+
+0
+4
+4
+PDJR-connectors
+CAMDEN_BOSS_CSTBV2-9_TERMINAL
+
+
+0
+18
+9
+PDJR-connectors
 DIP-10_200_ELL
 
 
@@ -60108,6 +60122,20 @@ DIP-16_296_ELL
 0
 16
 16
+PDJR-connectors
+DIP-28_W15.24mm_Socket
+28-lead though-hole mounted DIP package, row spacing 15.24 mm (600 mils), Socket
+THT DIP DIL PDIP 2.54mm 15.24mm 600mil Socket
+0
+31
+31
+PDJR-connectors
+G6BU-1114P-US
+
+
+0
+4
+4
 PDJR-connectors
 PCH-105L2MH
 
@@ -60137,6 +60165,13 @@ Phoenix-FK-MPT-5-3,5
 5
 5
 PDJR-connectors
+Phoenix-FK-MPT-6-3,5
+
+
+0
+6
+6
+PDJR-connectors
 Phoenix-FK-MPT-8-3,5
 
 
@@ -60144,12 +60179,26 @@ Phoenix-FK-MPT-8-3,5
 8
 8
 PDJR-connectors
-TMR-1-1211
+SIP-8
 
 
 0
 4
 4
+PDJR-connectors
+WUERTH_2015_5.08_x2
+
+
+0
+2
+2
+PDJR-transformers
+TGM-010P3RL
+
+
+0
+8
+8
 Package_BGA
 Analog_BGA-28_4.0x6.25mm_Layout4x7_P0.8mm_Ball0.45mm_Pad0.4
 Analog BGA-28 4.0mm x 6.25mm package, pitch 0.4mm pad, based on https://www.analog.com/media/en/technical-documentation/data-sheets/8063fa.pdf

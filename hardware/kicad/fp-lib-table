@@ -1,5 +1,6 @@
 (fp_lib_table
   (lib (name PDJR)(type KiCad)(uri /home/preeve/Projects/ankreo/modules/winint/hardware/1.0/kicad/libraries)(options "")(descr ""))
   (lib (name kicad)(type KiCad)(uri ${KIPRJMOD}/libraries/kicad.pretty)(options "")(descr ""))
-  (lib (name PDJR-connectors)(type KiCad)(uri /home/preeve/Projects/git/ankreo/modules/pdjr-libraries/connectors.pretty)(options "")(descr ""))
+  (lib (name PDJR-connectors)(type KiCad)(uri ${USER_MODULE_DIR}/connectors.pretty)(options "")(descr ""))
+  (lib (name PDJR-transformers)(type KiCad)(uri ${USER_MODULE_DIR}/transformers.pretty)(options "")(descr ""))
 )
