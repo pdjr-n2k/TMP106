@@ -97,12 +97,12 @@ PGN 130316 honour a 0.5s maximum transmission rate and that an individual
 sensor report is not transmitted more frequently than once every 2 seconds.
  
 These constraints raise a potential issue. If every sensor attempts to
-transmit at the maximum rate, then the 6 sensor reports be generated every
+transmit at the maximum rate, then six sensor reports be generated every
 two seconds whilst only four messages can actually be transmitted in the
 same time interval.
 Make sure that when you configure sensor channels you choose an
-appropriate transmit interval so that transmission overrun and
-possible data loss do not become an issue.
+appropriate range of transmit intervals so that transmission overrun
+and possible data loss do not become an issue.
 
 
 
