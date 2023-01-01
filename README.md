@@ -42,101 +42,157 @@ ratio is fixed.
 
 ## Module configuration
 
-Every DS18B20 temperature sensor IC is identified by a unique hardware
-address.
-This hardware address is used to associate a physical sensor with one
-of the module's six logical sensor channels through a process called
-*registration*.
+### Registering DS18B20 devices for use with TMP106
 
-If a DS18B20 fails or is no longer required for service with TMP106
-then it should be de-registered to free-up the associated sensor
-channel for possible future use with another device.
+Before a DS18B20 temperature sensor can be used with TMP106 it
+must be registered.
 
-### Checking sensor registration and presence
+The purpose of registration is to associate a particular physical
+sensor with a particular sensor channel.
+Once registered, a sensor can be connected to any of the module
+inputs, A-F, but will always be associated with the sensor channel
+against which it was registered.
+
+If a DS18B20 fails or is no longer required for service with its
+host TMP106 then it must be de-registered to free-up the associated
+sensor channel for possible future use with another device.
+
+Sensor devices can be register with and de-registered from the
+TMP106 by placing the module into registration mode during which
+normal module operation is interrupted.
+
+#### Entering and exiting registration mode
 
 1. Enter the value 0x00 into the ADDR/VALUE DIL switch.
 2. Press and release the PRG button.
 
-Channel LEDs 1 through 6 will flash if a DS18B20 is registered on that
-sensor channel.
-Each LED will illuminate steadily if the sensor registered to that
-channel is connected and working.
+The transmit LED will continuoulsy flash to indicate that
+registration mode is active.
 
-### Registering a sensor with a particular channel
+When you wish to leave registration mode, simply repeat this
+protocol.
+Registration mode will exit automatically after one minute of
+switch inactivity.
 
-There is a one-to-one mapping between DS18B20 addresses and sensor
-channels: if you want to associate an already registered DS18B20 then
-you must delete the existing registration (see below) first.
+Whilst in registration mode the channel sensor LEDs 1-6 have
+a special meaning.
 
-To register a sensor:
+FLASH indicates that the corresponding sensor channel is
+associated with a DS18B20 device.
 
-1. Connect the new a DS18B20 device to an unoccupied sensor terminal
-   block.
-2. Enter the number of the sensor channel to which the device should
-   be associated into the ADDR/VALUE DIL switch.
+ON indicates that the corresponsing sensor channel is associated with a
+DS18B20 device and that this device is currently connected to the
+TMP106.
+
+OFF indicates that the corresponding channel has no device association
+amd is thus available for sensor registration.
+
+#### Registering a sensor
+
+1. Connect a new (as in currently not registered) DS18B20 device to an
+   unoccupied sensor connection, A-F.
+2. Enter the number (between 0x01 and 0x06) of the sensor channel to which
+   the new device should be associated into the ADDR/VALUE DIL switch.
+   The value entered must correspond to an unregistered sensor channel:
+   i.e. one associated with a display LED which is not illuminated.
 3. Press and release the PRG button.
 
-The selected sensor LED will flash repeatedly whilst the sensor
-bus is scanned for the new device and revert to steady illumination
-once the registration is complete and the DS18B20 is active.
-If the DS18B20 cannot be registered then the associated channel sensor
+Th LED associated with the selected channel will flash whilst the sensor
+bus is scanned for a new device and revert to steady illumination once
+the registration is complete and the DS18B20 is active.
+
+If the DS18B20 cannot be detected and/or registered withing 20 seconds
+then the registration attempt will be aborted and the channel sensor
 LED will switch OFF.
 
-### De-registering a sensor
+#### De-registering a sensor
 
-1. Enter the number of the channel multiplied by 16 into to ADDR/VALUE
+1. Enter the number of the channel into the high 4-bits of the ADDR/VALUE
    DIL switch.
    This will be one of the values 0x10, 0x20, 0x30, 0x40, 0x50 or 0x60.
 2. Press and release the PRG button.
 
+The LED associated with the selected channel will switch off.
 
+### Configuring sensor channels
 
-Once a hardware address is associated with a logical sensor the  registered
+A sensor channel can be configured at any time, but will only be able
+to operate if a sensor device has been associated with the channel by
+registration (see above).
 
-**TMP106** understands the following configuration parameters.
+**TMP106** understands the following sensor channel configuration
+parameters.
 
 | Address | Name                             | Default value | Description |
 | :---:   | :---                             | :---:         | :--- |
 | 0x01    | AUTO CONFIGURE INSTANCE NUMBER   | 0xFF          | Starting number for automatic configuration of all sensor instance numbers. |
 | 0x02    | SENSOR 1 INSTANCE NUMBER         | 0xFF          | Instance number for sensor one. |
-| 0x03    | SENSOR 1 TRANSMISSION INTERVAL   | 0x04          | Transmission interval in seconds for sensor one. |
+| 0x03    | SENSOR 1 SAMPLING INTERVAL   | 0x03          | Transmission interval in seconds for sensor one. |
 | 0x04    | SENSOR 2 INSTANCE NUMBER         | 0xFF          | Instance number for sensor two. |
-| 0x05    | SENSOR 2 TRANSMISSION INTERVAL   | 0x04          | Transmission interval in seconds for sensor two. |
+| 0x05    | SENSOR 2 SAMPLING INTERVAL   | 0x03          | Transmission interval in seconds for sensor two. |
 | 0x06    | SENSOR 3 INSTANCE NUMBER         | 0xFF          | Instance number for sensor three. |
-| 0x07    | SENSOR 3 TRANSMISSION INTERVAL   | 0x08          | Transmission interval in seconds for sensor three. |
+| 0x07    | SENSOR 3 SAMPLING INTERVAL   | 0x07          | Transmission interval in seconds for sensor three. |
 | 0x08    | SENSOR 4 INSTANCE NUMBER         | 0xFF          | Instance number for sensor four. |
-| 0x09    | SENSOR 4 TRANSMISSION INTERVAL   | 0x08          | Transmission interval in seconds for sensor four. |
+| 0x09    | SENSOR 4 SAMPLING INTERVAL   | 0x07          | Transmission interval in seconds for sensor four. |
 | 0x0A    | SENSOR 5 INSTANCE NUMBER         | 0xFF          | Instance number for sensor five. |
-| 0x0B    | SENSOR 5 TRANSMISSION INTERVAL   | 0x0C          | Transmission interval in seconds for sensor five. |
+| 0x0B    | SENSOR 5 SAMPLING INTERVAL   | 0x0D          | Transmission interval in seconds for sensor five. |
 | 0x0C    | SENSOR 6 INSTANCE NUMBER         | 0xFF          | Instance number for sensor six. |
-| 0x0D    | SENSOR 6 TRANSMISSION INTERVAL   | 0x0C          | Transmission interval in seconds for sensor six. |
+| 0x0D    | SENSOR 6 SAMPLING INTERVAL   | 0x0D          | Transmission interval in seconds for sensor six. |
 
 The module uses the basic configuration mechanism provided by NOP100.
 All sensors are disabled by default.
 
 ### Setting sensor instance numbers
 
-To configure the instance number (and so enable) all six sensor
-channels en-masse using a block of six consecutive sensor instance
-numbers you should enter the instance number you wish to use for
-sensor one on the ADDR/VALUE DIL switch and press and release the
-PRG button.
-The number you specify (*n*) must be in the range 0..247 and none
-of the values in the range *n*..(*n* + 5) may be in use as the
-instance number of any temperature sensor on the host NMEA bus.
+Each sensor channel is characterised by an instance number (which
+identifies the sensor on the NMEA network) and a sampling interval
+which sets the period between consecutive sensor reading and will
+broadly correspond to the rate at which the sensor reading is
+broadcast onto the NMEA bus.
 
-You can, of course, assign a particular instance number to an
-individual sensor.
-Simply enter the address of the sensor instance number on the
-ADDR/VALUE DIL switch and press and hold the PRG button for two
-seconds and then release.
-The module's transmit LED will begin to flash rapidly.
-Enter your required instance number in the range 0..252 on the
-ADDR/VALUE DIL switch and press and release PRG.
-The instance number you choose must not be in use as the instance
-number of another temperature sensor on the host NMEA bus.
+The instance number of all channels defaults to 0xFF and, consequently,
+all channels are disabled.
+You can configure instance numbers for all sensor channels as a block,
+or set the instance number of each channel individually.
 
-### Setting sensor transmission intervals
+The default sampling intervals are chosen in such a way that the
+broadcast characteristics of sensor readings will obey the requirements
+of the NMEA 2000 specification: if you need to change these, then read
+the advice note
+[Choosing sampling intervals](#Choosing sampling intervals)
+at the end of this section.
+
+#### Set the instance number of all sensors at once
+
+To configure the instance number of all six sensor channels to
+consecutive values from a specified start value:
+
+1. Enter the value 0x01 on the ADDR/VALUE DIL switch.
+2. Press and hold the PRG button for at least one second before release.
+   The module's transmit LED will begin to flash rapidly.
+3. Enter the instance number you wish to use for sensor channel one on
+   the ADDR/VALUE DIL switch.
+4. Press and release the PRG button.
+   The module's transmit LED will stop flashing.
+
+The instance number you specify at (3) must be in the range 0..247 and
+none of the values in the range *n*..(*n* + 5) may be in use as the
+instance number of any existing or planned temperature sensor on the
+host NMEA bus.
+
+#### Set the instance number of a single sensor channel
+
+1. Enter the address of the sensor instance number on the
+   ADDR/VALUE DIL switch.
+2. Press and hold the PRG button for at least one second before
+   release.
+   The module's transmit LED will begin to flash rapidly.
+3. Enter the instance number you wish to use for the selected sensor
+   channel on the ADDR/VALUE DIL switch.
+4. Press and release the PRG button.
+   The module's transmit LED will stop flashing.
+
+### Set the sampling interval of a single sensor channel
 
 Sensor transmission intervals are set in a similar way to sensor instance
 numbers by specifying an appropriate parameter address and value for
