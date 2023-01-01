@@ -7,4 +7,8 @@
  * For the NOP100 module this file is intentionally empty.
  */
 
- sensors.begin();
+DEVICE_ADDRESSES.loadFromEeprom(DEVICE_ADDRESSES_EEPROM_ADDRESS);
+
+sensors.begin();
+
+ 

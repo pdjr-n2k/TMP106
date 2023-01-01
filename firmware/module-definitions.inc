@@ -17,15 +17,7 @@ OneWire oneWire(GPIO_ONE_WIRE_BUS);
 
 DallasTemperature sensors(&oneWire);
 
-byte[8] DEVICE_ADDRESSES[6];
-
-void deleteDeviceAddress(int sensorIndex) {
-  DEVICE_ADDRESSES[sensorIndex][0] = 0xff;
-}
-
-void assignDeviceAddress(int sensorIndex, byte[8] *address) {
-  for (int i = 0; i < 8; i++) DEVICE_ADDRESSES[sensorIndex][i] = address[i];
-}
+OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT);
 
 /**********************************************************************
  * getNewAddressFromBus reads the addresses of devices on the OneWire
@@ -40,30 +32,16 @@ bool getNewAddressFromBus(unit8_t *address) {
   
   for (uint8_t i = 0; i < deviceCount; i++) {
     if (getAddress(address, i)) {
-      if (!addressInUse(address)) return(true);
+      if (!DEVICE_ADDRESSES->contains(address)) return(true);
     }
   }
   return(false);
 }
 
-bool addressInUse(uint8_t *address) {
-    bool retval = false;
-    for (int i = 0; ((i < 6) && (retval == false)); i++) {
-      retval = compareAddresses(DEVICE_ADDRESSES[i], address);
-    }
-    return(retval);
-}
-
-bool compareAddresses(uint8_t *addressA, uint8_t *addressB) {
-  bool retval = true;
-  for (int i = 0; i < 8; i++) {
-    if (addressA[i] != addressB[i]) retval = false;
-  }
-  return(retval);
-}
 void configureModuleSettingMaybe(int value, bool longPress) {
   static long resetDeadline = 0UL;
   static int address = 0x00;
+  unsigned char deviceAddress[8];
   long now = millis();
 
   switch (longpress) {
@@ -107,11 +85,13 @@ void configureModuleSettingMaybe(int value, bool longPress) {
               break;
             case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
               if (getNewAddressFromBus(deviceAddress)) {
-                
-              }  scanBusForNewDevice();
+                DEVICE_ADDRESSES.setAddress(value, deviceAddress);
+                DEVICE_ADDRESSES.saveToEeprom(DEVICE_ADDRESSES_EEPROM_ADDRESS);
+              }
               break;
             case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
-              deleteDeviceAddress(value >> 4);
+              DEVICE_ADDRESSES.clearAddress(value >> 4);
+              DEVICE_ADDRESSES.saveToEeprom(DEVICE_ADDRESSES_EEPROM_ADDRESS);
               break;
             default:
               break;
