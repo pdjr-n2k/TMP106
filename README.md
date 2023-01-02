@@ -127,16 +127,39 @@ parameters.
 | :---:   | :---                       | :---:         | :--- |
 | 0x00    | SENSOR 1 INSTANCE NUMBER   | 0xFF          | Instance number for sensor one. |
 | 0x01    | SENSOR 1 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor one. |
-| 0x02    | SENSOR 2 INSTANCE NUMBER   | 0xFF          | Instance number for sensor two. |
-| 0x03    | SENSOR 2 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor two. |
-| 0x04    | SENSOR 3 INSTANCE NUMBER   | 0xFF          | Instance number for sensor three. |
-| 0x05    | SENSOR 3 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor three. |
-| 0x06    | SENSOR 4 INSTANCE NUMBER   | 0xFF          | Instance number for sensor four. |
-| 0x07    | SENSOR 4 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor four. |
-| 0x08    | SENSOR 5 INSTANCE NUMBER   | 0xFF          | Instance number for sensor five. |
-| 0x09    | SENSOR 5 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor five. |
-| 0x0A    | SENSOR 6 INSTANCE NUMBER   | 0xFF          | Instance number for sensor six. |
-| 0x0B    | SENSOR 6 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor six. |
+| 0x02    | SENSOR 1 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x03    | SENSOR 1 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x04    | SENSOR 1 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x05    | SENSOR 2 INSTANCE NUMBER   | 0xFF          | Instance number for sensor two. |
+| 0x06    | SENSOR 2 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor two. |
+| 0x07    | SENSOR 2 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x08    | SENSOR 2 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x09    | SENSOR 2 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x0A    | SENSOR 3 INSTANCE NUMBER   | 0xFF          | Instance number for sensor three. |
+| 0x0B    | SENSOR 3 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor three. |
+| 0x0C    | SENSOR 3 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x0D    | SENSOR 3 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x0E    | SENSOR 3 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x0F    | SENSOR 4 INSTANCE NUMBER   | 0xFF          | Instance number for sensor four. |
+| 0x10    | SENSOR 4 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor four. |
+| 0x11    | SENSOR 4 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x12    | SENSOR 4 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x13    | SENSOR 4 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x14    | SENSOR 5 INSTANCE NUMBER   | 0xFF          | Instance number for sensor five. |
+| 0x15    | SENSOR 5 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor five. |
+| 0x16    | SENSOR 5 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x17    | SENSOR 5 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x18    | SENSOR 5 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x19    | SENSOR 6 INSTANCE NUMBER   | 0xFF          | Instance number for sensor six. |
+| 0x1A    | SENSOR 6 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor six. |
+| 0x1B    | SENSOR 6 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x1C    | SENSOR 6 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x1D    | SENSOR 6 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
 
 The module uses the basic configuration mechanism provided by NOP100.
 All sensors are disabled by default.

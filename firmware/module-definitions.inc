@@ -20,20 +20,48 @@ OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_
 
 ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
 
-ArduinoQueue<TransmitQueueEntry> TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH);
+ProcessQueue<tN2kMessage> PGN130316_TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL);
+PGN130316_TRANSMIT_QUEUE.setProcessFuntion(transmitPgn130316);
 
+void transmitPgn130316(tN2kMessage &message) {
+  NMEA2000.SendMsg(N2kMsg);
+  TRANSMIT_LED_STATE = on;
+}
+
+/**********************************************************************
+ * sampleSensorsMaybe should be called from loop().
+ *
+ * Every SENSOR_SAMPLE_INTERVAL it will broadcast a temperature request
+ * on the OneWire bus asking all sensors to update their data.
+ *
+ * Each available sensor is then checked to see if it has reached its
+ * sample interval and if so the sensor temperature is read and a
+ * PGN130316 temperature report message created and placed on the
+ * PGN transmit queue.
+ */
 void sampleSensorMaybe() {
   static unsigned long deadline = 0UL;
   static unsigned long deadlines[SENSOR_CHANNEL_COUNT] = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
+  static unsigned char sid = 0;
   unsigned long now = millis();
+  tN2kMessage message;
 
   if (now > deadline) {
     sensors.requestTemperatures();
+    sid++;
     for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
       unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
       if ((address) && (now > deadlines[sensor])) {
         float tempc = (sensors.getTempC(address) + 273.0);
-        // create a PGN and queue it.
+        SetN2kPGN130316(
+          message,
+          sid, 
+          SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET),
+          (tN2kTempSource) SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET),
+          (double) tempc,
+          (double) ((SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) * 255) + SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE))
+        );
+        PGN130316_TRANSMIT_QUEUE.enqueue(message);
         deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)));
       }
     }
@@ -48,6 +76,9 @@ void setConfigurationDefaults() {
   for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
     MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET) = 0xFF;
     MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET) = (sensor < 2)?0x03:((sensor < 5)?0x07:0x0D);
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET) = 0x02;
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) = 0xFF;
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE) = 0xFF;
   }
 }
 
