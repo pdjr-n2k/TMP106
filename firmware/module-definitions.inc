@@ -10,6 +10,7 @@
  */
 
 enum OperatingMode { normal, registration } OPERATING_MODE = normal;
+struct TransmitQueueEntry{ unsigned char instance; float kelvin };
 
 OneWire oneWire(GPIO_ONE_WIRE_BUS);
 
@@ -18,6 +19,8 @@ DallasTemperature sensors(&oneWire);
 OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_BASE);
 
 ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
+
+ArduinoQueue<TransmitQueueEntry> TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH);
 
 void sampleSensorMaybe() {
   static unsigned long deadline = 0UL;

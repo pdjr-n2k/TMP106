@@ -70,11 +70,9 @@
 #define NMEA_PGN_HANDLERS  { { 0UL, 0 } }
 
 /**********************************************************************
- * Aliases for GPIO pins connected to switch inputs. 
+ * Alias for GPIO pin used as OneWire bus connection. 
  */
 #define GPIO_ONE_WIRE_BUS GPIO_D23
-
-#define PGN130316_MAX_TRANSMIT_INTERVAL 500UL
 
 #define CONFIGURATION_EEPROM_ADDRESS 10
 #define CONFIGURATION_SIZE (SENSOR_CHANNEL_COUNT * CONFIGURATION_SENSOR_BLOCK_SIZE)
@@ -87,4 +85,16 @@
 #define SENSOR_CHANNEL_COUNT 6
 #define SENSOR_CHANNEL_INDEX_BASE 1
 
+/**********************************************************************
+ * The frequency at which to request sensor temperature readings.
+ */
 #define SENSOR_SAMPLE_INTERVAL 1000
+
+/**********************************************************************
+ * The frequency at which to poll the message transmission queue.
+ */
+#define PGN130316_MAX_TRANSMIT_INTERVAL 500UL
+
+#define TRANSMIT_QUEUE_LENGTH 20
+
+
