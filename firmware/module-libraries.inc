@@ -13,3 +13,4 @@
  #include <OneWire.h>
  #include <DallasTemperature.h>
  #include "OneWireAddressTable.h"
+ #include "SensorConfiguration.h"

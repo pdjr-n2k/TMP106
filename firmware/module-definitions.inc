@@ -17,6 +17,8 @@ DallasTemperature sensors(&oneWire);
 
 OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_BASE);
 
+SensorConfiguration SENSOR_CONFIGURATION(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_BASE);
+
 /**********************************************************************
  * getNewAddressFromBus reads the addresses of devices on the OneWire
  * bus looking for an address that does not exist in the
@@ -82,12 +84,10 @@ void configureModuleSettingMaybe(int value, bool longPress) {
                 break;
               case 0x01: // set instance number block
                 if (value <= 247) {
-                  for (address = 0x02; address <= 0x0C; address += 2) {
-                    EEPROM.update(address, value++);
-                  }
-                  address = 0x00;
-                  break;
+                  for (i = 0; i < SENSOR_CHANNEL_COUNT; i++) SENSOR_CONFIGURATION.setInstance((i + 1), value++);
+                  SENSOR_CONFIGURATION.saveToEeprom().update(CONFIGURATION_EEPROM_ADDRESS);
                 }
+                address = 0x00;
                 break;
               default: // address is set, so this is a configuration parameter value
                 EEPROM.update(address, value);
