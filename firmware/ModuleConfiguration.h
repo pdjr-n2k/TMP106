@@ -4,9 +4,11 @@
 class ModuleConfiguration {
 
   public:
-    ModuleConfiguration(unsigned int size, unsigned int eepromAddress = 0, unsigned int startIndex = 0);
+    ModuleConfiguration(unsigned int size, unsigned int eepromAddress = 0);
     void setByte(unsigned int index, unsigned char value);
     unsigned char getByte(unsigned int index);
+
+    bool inUse();
 
     void save();
     void load();
@@ -14,7 +16,6 @@ class ModuleConfiguration {
   private:
     unsigned int size;
     unsigned int eepromAddress;
-    unsigned int startIndex;
     unsigned char *configuration;
     
 };

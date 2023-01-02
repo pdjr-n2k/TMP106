@@ -123,21 +123,20 @@ registration (see above).
 **TMP106** understands the following sensor channel configuration
 parameters.
 
-| Address | Name                             | Default value | Description |
-| :---:   | :---                             | :---:         | :--- |
-| 0x01    | AUTO CONFIGURE INSTANCE NUMBER   | 0xFF          | Starting number for automatic configuration of all sensor instance numbers. |
-| 0x02    | SENSOR 1 INSTANCE NUMBER         | 0xFF          | Instance number for sensor one. |
-| 0x03    | SENSOR 1 SAMPLING INTERVAL   | 0x03          | Transmission interval in seconds for sensor one. |
-| 0x04    | SENSOR 2 INSTANCE NUMBER         | 0xFF          | Instance number for sensor two. |
-| 0x05    | SENSOR 2 SAMPLING INTERVAL   | 0x03          | Transmission interval in seconds for sensor two. |
-| 0x06    | SENSOR 3 INSTANCE NUMBER         | 0xFF          | Instance number for sensor three. |
-| 0x07    | SENSOR 3 SAMPLING INTERVAL   | 0x07          | Transmission interval in seconds for sensor three. |
-| 0x08    | SENSOR 4 INSTANCE NUMBER         | 0xFF          | Instance number for sensor four. |
-| 0x09    | SENSOR 4 SAMPLING INTERVAL   | 0x07          | Transmission interval in seconds for sensor four. |
-| 0x0A    | SENSOR 5 INSTANCE NUMBER         | 0xFF          | Instance number for sensor five. |
-| 0x0B    | SENSOR 5 SAMPLING INTERVAL   | 0x0D          | Transmission interval in seconds for sensor five. |
-| 0x0C    | SENSOR 6 INSTANCE NUMBER         | 0xFF          | Instance number for sensor six. |
-| 0x0D    | SENSOR 6 SAMPLING INTERVAL   | 0x0D          | Transmission interval in seconds for sensor six. |
+| Address | Name                       | Default value | Description |
+| :---:   | :---                       | :---:         | :--- |
+| 0x00    | SENSOR 1 INSTANCE NUMBER   | 0xFF          | Instance number for sensor one. |
+| 0x01    | SENSOR 1 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor one. |
+| 0x02    | SENSOR 2 INSTANCE NUMBER   | 0xFF          | Instance number for sensor two. |
+| 0x03    | SENSOR 2 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor two. |
+| 0x04    | SENSOR 3 INSTANCE NUMBER   | 0xFF          | Instance number for sensor three. |
+| 0x05    | SENSOR 3 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor three. |
+| 0x06    | SENSOR 4 INSTANCE NUMBER   | 0xFF          | Instance number for sensor four. |
+| 0x07    | SENSOR 4 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor four. |
+| 0x08    | SENSOR 5 INSTANCE NUMBER   | 0xFF          | Instance number for sensor five. |
+| 0x09    | SENSOR 5 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor five. |
+| 0x0A    | SENSOR 6 INSTANCE NUMBER   | 0xFF          | Instance number for sensor six. |
+| 0x0B    | SENSOR 6 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor six. |
 
 The module uses the basic configuration mechanism provided by NOP100.
 All sensors are disabled by default.

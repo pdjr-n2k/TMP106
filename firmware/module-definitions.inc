@@ -17,7 +17,23 @@ DallasTemperature sensors(&oneWire);
 
 OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_BASE);
 
-SensorConfiguration SENSOR_CONFIGURATION(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_BASE);
+ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
+
+void sampleSensorMaybe() {
+  static unsigned long deadlines[SENSOR_CHANNEL_COUNT] = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
+  unsigned long now = millis();
+
+}
+/**********************************************************************
+ * setConfigurationDefaults initialises SENSOR_CONFIGURATION with a
+ * set of default values.
+ */
+void setConfigurationDefaults() {
+  for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET) = 0xFF;
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET) = (sensor < 2)?0x03:((sensor < 5)?0x07:0x0D);
+  }
+}
 
 /**********************************************************************
  * getNewAddressFromBus reads the addresses of devices on the OneWire
@@ -41,28 +57,22 @@ bool getNewAddressFromBus(unit8_t *address) {
 #define CONFIGURE_MODULE_SETTING_MAYBE
 void configureModuleSettingMaybe(int value, bool longPress) {
   static long resetDeadline = 0UL;
-  static int address = 0x00;
+  static int address = 0xFF;
   unsigned char deviceAddress[8];
   long now = millis();
 
   if (value == 0xffff) { // Perhaps cancel a timed-out protocol.
     if ((resetDeadline != 0UL) && (now > resetDeadline)) {
       resetDeadline = 0UL;
-      address = 0x00;
+      address = 0xFF;
     }
   } else {
     switch (longpress) {
       case true:
         switch (OPERATING_MODE) {
           case normal: // In normal mode a long press signals entry of a parameter address
-            switch (value) {
-              case 0x01: 0x02: 0x03: 0x04: 0x05: 0x06: 0x07: 0x08: 0x09: 0x0A: 0x0B: 0x0C: 0x0D:
-                address = value;
-                resetDeadline = (now + CONFIGURATION_INACTIVITY_TIMEOUT);
-                break;
-              default: // invalid parameter address
-                break;
-            }
+            address = value;
+            resetDeadline = (now + CONFIGURATION_INACTIVITY_TIMEOUT);
             break;
           case registration: // In registration mode a long press has no meaning
             break;
@@ -72,8 +82,8 @@ void configureModuleSettingMaybe(int value, bool longPress) {
         switch (OPERATING_MODE) {
           case normal: // short button press in normal mode
             switch (address) {
-              case 0x00: // if address is not set then this is a mode change request.
-                switch (value) {
+              case 0xFF: // if address not set -> then this is a special action.
+                switch (value) {}
                   case 0x00: // mode change requires value to be zero
                     OPERATING_MODE = registration;
                     TRANSMIT_LED_STATE = flash;
@@ -82,16 +92,21 @@ void configureModuleSettingMaybe(int value, bool longPress) {
                     break;
                 }
                 break;
-              case 0x01: // set instance number block
+              case 0xFE: // set instance number block
                 if (value <= 247) {
-                  for (i = 0; i < SENSOR_CHANNEL_COUNT; i++) SENSOR_CONFIGURATION.setInstance((i + 1), value++);
-                  SENSOR_CONFIGURATION.saveToEeprom().update(CONFIGURATION_EEPROM_ADDRESS);
+                  for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
+                    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET, value++);
+                  }
+                  MODULE_CONFIGURATION.save();
                 }
-                address = 0x00;
+                address = 0xFF;
                 break;
               default: // address is set, so this is a configuration parameter value
-                EEPROM.update(address, value);
-                address = 0x00;
+                if ((address >= 0) && (address < CONFIGURATION_SIZE)) {
+                  MODULE_CONFIGURATION.setByte(address, value);
+                  MODULE_CONFIGURATION.save();
+                }
+                address = 0xFF;
                 break;
             }
             break;
@@ -120,35 +135,3 @@ void configureModuleSettingMaybe(int value, bool longPress) {
     }
   }
 }
-
-
-
-
-
-
-  // If settingAddress is something other than the default value then we
-  // are in a configuration protocol waiting for a setting value and we
-  // indicate this by flashing the transmit LED.
-  if (settingAddress != MODULE_INSTANCE_EEPROM_ADDRESS) TRANSMIT_LED_STATE = 1;
-
-  if (value == 0xffff) { // Perhaps cancel a timed-out protocol.
-    if ((resetDeadline != 0UL) && (now > resetDeadline)) {
-      resetDeadline = 0UL;
-      settingAddress = MODULE_INSTANCE_EEPROM_ADDRESS;
-    }
-  } else if (!longPress) { // This is a short press (param is a value)
-    setModuleSetting(settingAddress, (uint8_t) value);
-    if (settingAddress == MODULE_INSTANCE_EEPROM_ADDRESS) MODULE_INSTANCE = EEPROM.read(settingAddress);
-    settingAddress = MODULE_INSTANCE_EEPROM_ADDRESS;
-  } else { // This is a long press (param is an address)
-    if ((value >= FIRST_AVAILABLE_APPLICATION_EEPROM_ADDRESS) && (value < EEPROM.length())) {
-      // <param> contains a valid address
-      settingAddress = value;
-      resetDeadline = (now + CONFIGURATION_INACTIVITY_TIMEOUT);
-    } else {
-      // Invalid application address
-      settingAddress = MODULE_INSTANCE_EEPROM_ADDRESS;
-    }
-  }
-}
-
