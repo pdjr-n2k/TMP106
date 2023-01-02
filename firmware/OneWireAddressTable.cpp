@@ -26,7 +26,9 @@ void OnewWireAddressTable::clearAddress(unsigned int index) {
 
 unsigned char *OneWireAddressTable::getAddress(unsigned int index) {
   if ((index - this->indexBase) < this->tableSize ) {
-    return(this->table[(index - this->indexBase)]);
+    if (this->table[(index - this->indexBase)][0] != 0xff) {
+      return(this->table[(index - this->indexBase)]);
+    }
   }
   return(0);
 }

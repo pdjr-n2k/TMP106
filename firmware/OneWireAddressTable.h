@@ -27,7 +27,7 @@ class OneWireAddressTable {
 
     /******************************************************************
      * Return a pointer to address at table position <index> or 0 if
-     * <index> is out of range 
+     * <index> is out of range or address is invalid.
      */
     unsigned char *getAddress(unsigned int index);
 

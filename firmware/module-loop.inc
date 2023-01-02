@@ -6,3 +6,6 @@
  * 
  * For the NOP100 module this file is intentionally empty.
  */
+
+// Sample the sensors and perhaps queue temperature reports for output.
+sampleSensorMaybe();

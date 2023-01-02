@@ -20,10 +20,23 @@ OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_
 ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
 
 void sampleSensorMaybe() {
+  static unsigned long deadline = 0UL;
   static unsigned long deadlines[SENSOR_CHANNEL_COUNT] = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
   unsigned long now = millis();
 
+  if (now > deadline) {
+    sensors.requestTemperatures();
+    for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
+      unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
+      if ((address) && (now > deadlines[sensor])) {
+        float tempc = (sensors.getTempC(address) + 273.0);
+        // create a PGN and queue it.
+        deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)));
+      }
+    }
+    deadline = (now + SENSOR_SAMPLE_INTERVAL);
 }
+
 /**********************************************************************
  * setConfigurationDefaults initialises SENSOR_CONFIGURATION with a
  * set of default values.
