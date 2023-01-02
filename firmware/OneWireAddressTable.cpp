@@ -1,32 +1,32 @@
 #include <cstdlib.h>
+#include <EEPROM.h>
 #include "OneWireAddressTable.h"
 
-OneWireAddressTable::OneWireAddressTable(unsigned int size) {
+OneWireAddressTable::OneWireAddressTable(unsigned int size, int indexBase) {
   this->tableSize = size;
+  this->indexBase = indexBase;
   this->table = (unsigned char *) malloc(sizeof(unsigned char) * size);
 
   for (int i = 0; i < this->tableSize; i++) {
-    for (int j = 0; j < 8; j++) {
-      this->table[i][j] = 0xff;
-    }
+    this->clearAddress(i + this->indexBase);
   }
 }
 
 void OneWireAddressTable::setAddress(unsigned int index, unsigned char *address) {
-  if (index < this->tableSize) {
-    for (int i = 0; i < 8; i++) this->table[index][i] = address[i];
+  if ((index - this->indexBase) < this->tableSize) {
+    for (int i = 0; i < 8; i++) this->table[(index - this->indexBase)][i] = address[i];
   }
 }
 
-void OnewWireAddressTable::clearAddress(unsigned int) {
-  if (index < this->tableSize) {
-    for (int i = 0; i < 8; i++) this->table[index][i] = 0xff;
+void OnewWireAddressTable::clearAddress(unsigned int index) {
+  if ((index - this->indexBase) < this->tableSize) {
+    for (int i = 0; i < 8; i++) this->table[(index - this.indexBase)][i] = 0xff;
   }
 }
 
-unsigned char *OneWireAddressTable::getAddress(int index) {
-  if (index < this->tableSize ) {
-    return(this->table[index]);
+unsigned char *OneWireAddressTable::getAddress(unsigned int index) {
+  if ((index - this->indexBase) < this->tableSize ) {
+    return(this->table[(index - this->indexBase)]);
   }
   return(0);
 }
