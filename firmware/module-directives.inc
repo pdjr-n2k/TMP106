@@ -69,24 +69,28 @@
 #define NMEA_TRANSMIT_MESSAGE_PGNS { 130316UL }
 #define NMEA_PGN_HANDLERS  { { 0UL, 0 } }
 
-/**********************************************************************
- * Alias for GPIO pin used as OneWire bus connection. 
- */
+// Alias for GPIO pin used as OneWire bus connection. 
 #define GPIO_ONE_WIRE_BUS GPIO_D23
 
-#define CONFIGURATION_EEPROM_ADDRESS 10
-#define CONFIGURATION_SIZE (SENSOR_CHANNEL_COUNT * CONFIGURATION_SENSOR_BLOCK_SIZE)
+// Number of sensor channels supported by the module.
+#define SENSOR_CHANNEL_COUNT 6
+// Where does the channel numbering start.
+#define SENSOR_CHANNEL_INDEX_BASE 1
+// Number of configuration bytes per channel. 
 #define CONFIGURATION_SENSOR_BLOCK_SIZE 5
+// Byte offsets within a sensor configuration block.
 #define CONFIGURATION_SENSOR_INSTANCE_OFFSET 0
 #define CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET 1
 #define CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET 2
 #define CONFIGURATION_SENSOR_SET_POINT_HI_BYTE 3
 #define CONFIGURATION_SENSOR_SET_POINT_LO_BYTE 3
 
-#define DEVICE_ADDRESSES_EEPROM_ADDRESS 100
+// EEPROM address where module configuration data is saved.
+#define CONFIGURATION_EEPROM_ADDRESS 10
+// Size in bytes of the configuration data.
+#define CONFIGURATION_SIZE (SENSOR_CHANNEL_COUNT * CONFIGURATION_SENSOR_BLOCK_SIZE)
 
-#define SENSOR_CHANNEL_COUNT 6
-#define SENSOR_CHANNEL_INDEX_BASE 1
+#define DEVICE_ADDRESSES_EEPROM_ADDRESS 100
 
 /**********************************************************************
  * The frequency at which to request sensor temperature readings.
