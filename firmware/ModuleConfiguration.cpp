@@ -6,7 +6,7 @@
 ModuleConfiguration::ModuleConfiguration(unsigned int size, unsigned int eepromAddress) {
   this->size = size;
   this->eepromAddress = eepromAddress;
-  this->configuration = (unsigned char *) malloc(size);
+  this->configuration = new unsigned char [this->size];
   for (unsigned int i = 0; i < this->size; i++) this->configuration[i] = 0xff;
 }
 

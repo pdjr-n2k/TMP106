@@ -6,7 +6,7 @@
 OneWireAddressTable::OneWireAddressTable(unsigned int size, unsigned int indexBase) {
   this->tableSize = size;
   this->indexBase = indexBase;
-  this->table = (OneWireAddress *) malloc(sizeof(OneWireAddress) * size);
+  this->table = new OneWireAddress [this->tableSize];
 
   for (unsigned int i = 0; i < this->tableSize; i++) {
     this->table[i] = OneWireAddress();
