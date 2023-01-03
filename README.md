@@ -19,7 +19,7 @@ Multiple **TMP106** modules can be installed on a single NMEA bus.
 [Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
 temperature sensors.
 The module provides electrically isolated +5VDC, GND and data
-connections for each sensor.
+connections for each sensor through connectors A through F.
 Two-wire (parasitic mode) operation of the DS18B20 is not supported.
 
 The total maximum length of all sensor connection wires is limited and
@@ -31,14 +31,12 @@ and use of twisted pair cable is recommended.
 
 **TMP106** uses the NMEA 2000 temperature reporting protocol
 [PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf)
-to report the temperature of each connected sensor.
+to broadcast the temperature of each connected sensor.
 
-By default a cluster of temperature sensor reports is transmitted once
-every five seconds with a 0.5s interval between the reports for each
-connected sensor.
-The default cluster transmission interval can be overriden by the
-user, but the 10:1 cluster-transmission-interval:sensor-transmission-interval
-ratio is fixed. 
+The module transmits PGN 130316 message at a maximum rate of one message
+per 500ms.
+Each sensor channel can be read at a minumum interval of two seconds and
+readings are simply queued for subsequent transmission.
 
 ## Module configuration
 
