@@ -12,5 +12,6 @@
  #include <ArduinoQueue.h>
  #include <OneWire.h>
  #include <DallasTemperature.h>
+ #include <ProcessQueue.h>
  #include "OneWireAddressTable.h"
  #include "ModuleConfiguration.h"

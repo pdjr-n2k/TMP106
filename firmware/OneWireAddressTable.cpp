@@ -1,33 +1,36 @@
-#include <cstdlib.h>
+#include <cstdlib>
+#include <Arduino.h>
 #include <EEPROM.h>
 #include "OneWireAddressTable.h"
 
-OneWireAddressTable::OneWireAddressTable(unsigned int size, int indexBase) {
+OneWireAddressTable::OneWireAddressTable(unsigned int size, unsigned int indexBase) {
   this->tableSize = size;
   this->indexBase = indexBase;
-  this->table = (unsigned char *) malloc(sizeof(unsigned char) * size);
+  this->table = (OneWireAddress *) malloc(sizeof(OneWireAddress) * size);
 
-  for (int i = 0; i < this->tableSize; i++) {
-    this->clearAddress(i + this->indexBase);
+  for (unsigned int i = 0; i < this->tableSize; i++) {
+    this->table[i] = OneWireAddress();
   }
 }
 
 void OneWireAddressTable::setAddress(unsigned int index, unsigned char *address) {
   if ((index - this->indexBase) < this->tableSize) {
-    for (int i = 0; i < 8; i++) this->table[(index - this->indexBase)][i] = address[i];
+    for (int i = 0; i < 8; i++) {
+      this->table[((index - this->indexBase) + i)].setAddress(address);
+    }
   }
 }
 
-void OnewWireAddressTable::clearAddress(unsigned int index) {
+void OneWireAddressTable::clearAddress(unsigned int index) {
   if ((index - this->indexBase) < this->tableSize) {
-    for (int i = 0; i < 8; i++) this->table[(index - this.indexBase)][i] = 0xff;
+    for (unsigned int i = 0; i < 8; i++) this->table[((index - this->indexBase) + i)].clearAddress();
   }
 }
 
 unsigned char *OneWireAddressTable::getAddress(unsigned int index) {
   if ((index - this->indexBase) < this->tableSize ) {
-    if (this->table[(index - this->indexBase)][0] != 0xff) {
-      return(this->table[(index - this->indexBase)]);
+    if (this->table[(index - this->indexBase)].getByte(0) != 0xff) {
+      return(this->table[(index - this->indexBase)].getAddress());
     }
   }
   return(0);
@@ -36,11 +39,12 @@ unsigned char *OneWireAddressTable::getAddress(unsigned int index) {
 bool OneWireAddressTable::contains(unsigned char *address) {
   bool retval = false;
 
-  for (int i = 0; i < this->tableSize; i++) {
-    if (!memcmp(address, this->table[i], 8)) {
+  for (unsigned int i = 0; i < this->tableSize; i++) {
+    if (!memcmp(address, this->table[i].getAddress(), 8)) {
       retval = true;
     } 
   }
+  return(retval);
 }
 
 void OneWireAddressTable::saveToEeprom(int address) {

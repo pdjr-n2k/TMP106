@@ -10,7 +10,8 @@
  */
 
 enum OperatingMode { normal, registration } OPERATING_MODE = normal;
-struct TransmitQueueEntry{ unsigned char instance; float kelvin };
+struct TemperatureReading { unsigned int sensor; unsigned char sid; float temperature; };
+void transmitPgn130316(TemperatureReading temperatureReading);
 
 OneWire oneWire(GPIO_ONE_WIRE_BUS);
 
@@ -18,13 +19,21 @@ DallasTemperature sensors(&oneWire);
 
 OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_BASE);
 
-ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
+ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS);
 
-ProcessQueue<tN2kMessage> PGN130316_TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL);
-PGN130316_TRANSMIT_QUEUE.setProcessFuntion(transmitPgn130316);
+ProcessQueue<TemperatureReading> PGN130316_TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPgn130316);
 
-void transmitPgn130316(tN2kMessage &message) {
-  NMEA2000.SendMsg(N2kMsg);
+void transmitPgn130316(TemperatureReading temperatureReading) {
+  tN2kMsg message;
+  SetN2kPGN130316(
+    message,
+    temperatureReading.sid, 
+    MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET),
+    (tN2kTempSource) MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET),
+    (double) temperatureReading.temperature,
+    (double) ((MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) * 255) + MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE))
+  );
+  NMEA2000.SendMsg(message);
   TRANSMIT_LED_STATE = on;
 }
 
@@ -44,7 +53,7 @@ void sampleSensorMaybe() {
   static unsigned long deadlines[SENSOR_CHANNEL_COUNT] = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
   static unsigned char sid = 0;
   unsigned long now = millis();
-  tN2kMessage message;
+  TemperatureReading temperatureReading;
 
   if (now > deadline) {
     sensors.requestTemperatures();
@@ -52,20 +61,15 @@ void sampleSensorMaybe() {
     for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
       unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
       if ((address) && (now > deadlines[sensor])) {
-        float tempc = (sensors.getTempC(address) + 273.0);
-        SetN2kPGN130316(
-          message,
-          sid, 
-          SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET),
-          (tN2kTempSource) SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET),
-          (double) tempc,
-          (double) ((SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) * 255) + SENSOR_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE))
-        );
-        PGN130316_TRANSMIT_QUEUE.enqueue(message);
+        temperatureReading.sensor = sensor;
+        temperatureReading.sid = sid;
+        temperatureReading.temperature = (sensors.getTempC(address) + 273.0);
+        PGN130316_TRANSMIT_QUEUE.enqueue(temperatureReading);
         deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)));
       }
     }
     deadline = (now + SENSOR_SAMPLE_INTERVAL);
+  }
 }
 
 /**********************************************************************
@@ -74,11 +78,11 @@ void sampleSensorMaybe() {
  */
 void setConfigurationDefaults() {
   for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET) = 0xFF;
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET) = (sensor < 2)?0x03:((sensor < 5)?0x07:0x0D);
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET) = 0x02;
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) = 0xFF;
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE) = 0xFF;
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET, 0xFF);
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET, (sensor < 2)?0x03:((sensor < 5)?0x07:0x0D));
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET, 0x02);
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE, 0xFF);
+    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE, 0xFF);
   }
 }
 
@@ -89,13 +93,12 @@ void setConfigurationDefaults() {
  * returned and the discovered address is written to <address> else
  * the function returns false and address is unmodified.
  */
-bool getNewAddressFromBus(unit8_t *address) {
-  bool retval = false;
-  uint8_t deviceCount = getDeviceCount();
+bool getNewAddressFromBus(unsigned char *address) {
+  unsigned char deviceCount = sensors.getDeviceCount();
   
   for (int i = 0; i < deviceCount; i++) {
-    if (getAddress(address, i)) {
-      if (!DEVICE_ADDRESSES->contains(address)) return(true);
+    if (sensors.getAddress(address, i)) {
+      if (!DEVICE_ADDRESSES.contains(address)) return(true);
     }
   }
   return(false);
@@ -114,7 +117,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
       address = 0xFF;
     }
   } else {
-    switch (longpress) {
+    switch (longPress) {
       case true:
         switch (OPERATING_MODE) {
           case normal: // In normal mode a long press signals entry of a parameter address
@@ -130,7 +133,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
           case normal: // short button press in normal mode
             switch (address) {
               case 0xFF: // if address not set -> then this is a special action.
-                switch (value) {}
+                switch (value) {
                   case 0x00: // mode change requires value to be zero
                     OPERATING_MODE = registration;
                     TRANSMIT_LED_STATE = flash;

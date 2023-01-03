@@ -1,6 +1,7 @@
-
 #ifndef ONE_WIRE_ADDRESS_TABLE
 #define ONE_WIRE_ADDRESS_TABLE
+
+#include "OneWireAddress.h"
 
 class OneWireAddressTable {
 
@@ -11,7 +12,7 @@ class OneWireAddressTable {
      * all bytes initialised to 0xff. <indexBase> specifies the offset
      * applied by the client application to the table base index.
      */
-    OneWireAddressTable(int tableSize, int indexBase = 0);
+    OneWireAddressTable(unsigned int tableSize, unsigned int indexBase = 0);
 
     /******************************************************************
      * Copy the 8-byte <address> to this address table at entry
@@ -48,9 +49,9 @@ class OneWireAddressTable {
     void loadFromEeprom(int address);
 
   private:
-    int tableSize;
-    int indexBase;
-    unsigned char *table;
+    unsigned int tableSize;
+    unsigned int indexBase;
+    OneWireAddress *table;
 
 };
 

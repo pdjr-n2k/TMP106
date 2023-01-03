@@ -1,24 +1,24 @@
-#include <cstdlib.h>
+#include <cstdlib>
+#include <Arduino.h>
 #include <EEPROM.h>
 #include "ModuleConfiguration.h"
 
 ModuleConfiguration::ModuleConfiguration(unsigned int size, unsigned int eepromAddress) {
   this->size = size;
   this->eepromAddress = eepromAddress;
-  this->startIndex = startIndex;
   this->configuration = (unsigned char *) malloc(size);
-  for (int i = 0; i < this->size; i++) this->configuration[i] = 0xff;
+  for (unsigned int i = 0; i < this->size; i++) this->configuration[i] = 0xff;
 }
 
 void ModuleConfiguration::setByte(unsigned int index, unsigned char value) {
-  if ((index - this->startIndex) < this->size) {
-    this->configuration[(index - this->startIndex)] = value;
+  if (index < this->size) {
+    this->configuration[index] = value;
   }
 }
 
 unsigned char ModuleConfiguration::getByte(unsigned int index) {
-  if ((index - this->startIndex) < this->size) {
-    return(this->configuration[(index - this->startIndex)]);
+  if (index < this->size) {
+    return(this->configuration[index]);
   }
   return(0xff);
 }
@@ -26,7 +26,7 @@ unsigned char ModuleConfiguration::getByte(unsigned int index) {
 bool ModuleConfiguration::inUse() {
   bool retval = false;
 
-  for (int i = 0; i < this->size; i++) if (this->configuration[i] != 0xff) retval = true;
+  for (unsigned int i = 0; i < this->size; i++) if (this->configuration[i] != 0xff) retval = true;
   return(retval);
 }
 
