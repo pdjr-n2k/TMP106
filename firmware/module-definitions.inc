@@ -11,7 +11,7 @@
 
 enum OperatingMode { normal, registration } OPERATING_MODE = normal;
 struct TemperatureReading { unsigned int sensor; unsigned char sid; float temperature; };
-void transmitPgn130316(TemperatureReading temperatureReading);
+void transmitPGN130316(TemperatureReading temperatureReading);
 
 OneWire oneWire(GPIO_ONE_WIRE_BUS);
 
@@ -21,9 +21,13 @@ OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_
 
 ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS);
 
-ProcessQueue<TemperatureReading> PGN130316_TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPgn130316);
+ProcessQueue<TemperatureReading> PGN130316_TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
 
-void transmitPgn130316(TemperatureReading temperatureReading) {
+/**********************************************************************
+ * Map <temperatureReading> into a PGN 130316 message and transmit it
+ * onto the bus, flashing the transmit LED appropriately.
+ */
+void transmitPGN130316(TemperatureReading temperatureReading) {
   tN2kMsg message;
   SetN2kPGN130316(
     message,
@@ -34,7 +38,7 @@ void transmitPgn130316(TemperatureReading temperatureReading) {
     (double) ((MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) * 255) + MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE))
   );
   NMEA2000.SendMsg(message);
-  TRANSMIT_LED_STATE = on;
+  TRANSMIT_LED_STATE = once;
 }
 
 /**********************************************************************

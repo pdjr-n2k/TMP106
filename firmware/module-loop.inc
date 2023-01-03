@@ -7,5 +7,14 @@
  * For the NOP100 module this file is intentionally empty.
  */
 
-// Sample the sensors and perhaps queue temperature reports for output.
+/**********************************************************************
+ * Sample the sensors and perhaps queue temperature reports for future
+ * output.
+ */
 sampleSensorMaybe();
+
+/**********************************************************************
+ * Process the transmit queue transmitting PGN 130316 messages for any
+ * queued temperature readings.
+ */
+PGN130316_TRANSMIT_QUEUE.process();
