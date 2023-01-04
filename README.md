@@ -1,13 +1,14 @@
 # TMP106 - NMEA 2000 temperature sensor module
 
 **TMP106** is a specialisation of
-[NOP100]()
+[NOP100](https://www.github.com/preeve9534/NOP100)
 which implements a six channel temperature sensor module.
 
 The module presents on the NMEA bus as a device with Class Code 75
 (Sensor Communication Interface) and Function Code 130 (Temperature)
-and reports its status through transmission of PGN 130316 Temperature,
-Extended Range messages.
+and reports its status through transmission of
+[PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf)
+messages.
 
 The module is powered from the host NMEA bus and has an LEN of 1.0.
 
@@ -15,26 +16,27 @@ Multiple **TMP106** modules can be installed on a single NMEA bus.
 
 ## Temperature Sensors
 
-**TMP106** suports the connection of up to six 
+**TMP106** uses the
 [Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
-temperature sensors.
-The module provides electrically isolated +5VDC, GND and data
-connections for each sensor through connectors A through F.
+temperature sensor and provides six electrically isolated three-pole
+terminals for each sensors +5VD, GND and bus connections.
 Two-wire (parasitic mode) operation of the DS18B20 is not supported.
 
 The total maximum length of all sensor connection wires is limited and
 depends somewhat on environmental temperature and electrical noise.
 Twenty metres total wire length should be feasible in all situations
-and use of twisted pair cable is recommended.
+using twisted pair cable.
 
 ## Temperature reporting
 
-**TMP106** uses the NMEA 2000 temperature reporting protocol
-[PGN 130316 Temperature, Extended Range](https://www.nmea.org/Assets/nmea%202000%20pgn%20130316%20corrigenda%20nmd%20version%202.100%20feb%202015.pdf)
-to broadcast the temperature of each connected sensor.
+**TMP106** treats each connected temperature sensor as an independent
+device identified by a unique, user configured, address known in NMEA
+parlance as an instance number.
+PGN 130316 temperature reports are broadcast regularly for each sensor
+at user defined time intervals.
 
-The module transmits PGN 130316 message at a maximum rate of one message
-per 500ms.
+The maximum transmission rate of PGN 130316 by a network module the **TMP106** is
+limited to one message every 500ms 
 Each sensor channel can be read at a minumum interval of two seconds and
 readings are simply queued for subsequent transmission.
 
