@@ -20,9 +20,7 @@ Multiple **TMP106** modules can be installed on a single NMEA bus.
 [Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
 temperature sensor.
 These devices connect to the **TMP106** over a OneWire bus and are
-individually identified by a hardware address which the module
-configuration process uses to uniquely associate each device with a
-temperature sensor channel.
+individually identified by a hardware address.
 
 The module has six electrically isolated three-pole terminal blocks
 (labelled A through F) which allow temperature sensor devices to be
@@ -33,16 +31,18 @@ Two-wire (parasitic mode) operation of the DS18B20 is not supported.
 Note that a DS18B20 temperature sensor can be connected to any terminal
 block and will always report on its configured sensor channel.
 
-The total maximum length of all sensor connection wires is limited and
-depends somewhat on environmental temperature and electrical noise.
+The total length of the OneWire bus is limited and the maximum length
+of all sensor connection depends somewhat on environmental temperature
+and electrical noise.
 Twenty metres total wire length should be feasible in all situations
 using twisted pair cable.
 
 ## Temperature reporting
 
 **TMP106** treats each connected temperature sensor as an independent
-device identified by a unique, user configured, address known in NMEA
-parlance as an instance number.
+device and maintains a persistent mapping between a sensor's OneWire
+hardware address and its unique, user configured, NMEA address (NMEA
+refer to this as an instance number).
 
 PGN 130316 temperature reports are broadcast regularly for each sensor
 at user defined time intervals.
@@ -53,6 +53,13 @@ the **TMP106** will not broadcast more than two temperature reports
 per second.
 Secondly, a limit on the minimum reporting interval of a single
 temperature instance is limited to two seconds.
+
+These timing constraints raise a potential issue: if every sensor
+attempts to transmit at the maximum rate, then six sensor reports be
+generated every two seconds whilst only four messages can actually be
+transmitted in the same time interval.
+The reporting intervals of each channel must be chosen so that overrun
+and possible data loss do not become an issue.
 
 ## Module configuration
 
