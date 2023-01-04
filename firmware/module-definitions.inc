@@ -17,7 +17,7 @@ OneWire oneWire(GPIO_ONE_WIRE_BUS);
 
 DallasTemperature sensors(&oneWire);
 
-OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, SENSOR_CHANNEL_INDEX_BASE);
+OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
 
 ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS);
 
@@ -173,12 +173,12 @@ void configureModuleSettingMaybe(int value, bool longPress) {
               case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
                 if (getNewAddressFromBus(deviceAddress)) {
                   DEVICE_ADDRESSES.setAddress(value, deviceAddress);
-                  DEVICE_ADDRESSES.saveToEeprom(DEVICE_ADDRESSES_EEPROM_ADDRESS);
+                  DEVICE_ADDRESSES.save();
                 }
                 break;
               case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
                 DEVICE_ADDRESSES.clearAddress(value >> 4);
-                DEVICE_ADDRESSES.saveToEeprom(DEVICE_ADDRESSES_EEPROM_ADDRESS);
+                DEVICE_ADDRESSES.save();
                 break;
               default:
                 break;

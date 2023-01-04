@@ -7,10 +7,15 @@
  * For the NOP100 module this file is intentionally empty.
  */
 
-DEVICE_ADDRESSES.loadFromEeprom(DEVICE_ADDRESSES_EEPROM_ADDRESS);
+/**********************************************************************
+ * Load configured DS18B20 device addresses from EEPROM.
+ */
+DEVICE_ADDRESSES.load();
 
 /**********************************************************************
- * Load SENSOR_CONFIGURATION from
+ * Load sensor NMEA configuration from EEPROM. If the configuration is
+ * un-initialised then populate it with default values and save this
+ * now initialised data back to EEPROM.
  */
 MODULE_CONFIGURATION.load();
 if (!MODULE_CONFIGURATION.inUse()) {
@@ -18,6 +23,9 @@ if (!MODULE_CONFIGURATION.inUse()) {
     MODULE_CONFIGURATION.save();
 }
 
+/**********************************************************************
+ * Start sensor operation on the OneWire bus.
+ */
 sensors.begin();
 
  

@@ -3,18 +3,19 @@
 #include <EEPROM.h>
 #include "OneWireAddressTable.h"
 
-OneWireAddressTable::OneWireAddressTable(unsigned int size, unsigned int indexBase) {
-  this->tableSize = size;
+OneWireAddressTable::OneWireAddressTable(unsigned int size, int eepromAddress, unsigned int indexBase) {
+  this->size = size;
+  this->eepromAddress = eepromAddress;
   this->indexBase = indexBase;
-  this->table = new OneWireAddress [this->tableSize];
+  this->table = new OneWireAddress [this->size];
 
-  for (unsigned int i = 0; i < this->tableSize; i++) {
+  for (unsigned int i = 0; i < this->size; i++) {
     this->table[i] = OneWireAddress();
   }
 }
 
 void OneWireAddressTable::setAddress(unsigned int index, unsigned char *address) {
-  if ((index - this->indexBase) < this->tableSize) {
+  if ((index - this->indexBase) < this->size) {
     for (int i = 0; i < 8; i++) {
       this->table[((index - this->indexBase) + i)].setAddress(address);
     }
@@ -22,13 +23,13 @@ void OneWireAddressTable::setAddress(unsigned int index, unsigned char *address)
 }
 
 void OneWireAddressTable::clearAddress(unsigned int index) {
-  if ((index - this->indexBase) < this->tableSize) {
+  if ((index - this->indexBase) < this->size) {
     for (unsigned int i = 0; i < 8; i++) this->table[((index - this->indexBase) + i)].clearAddress();
   }
 }
 
 unsigned char *OneWireAddressTable::getAddress(unsigned int index) {
-  if ((index - this->indexBase) < this->tableSize ) {
+  if ((index - this->indexBase) < this->size ) {
     if (this->table[(index - this->indexBase)].getByte(0) != 0xff) {
       return(this->table[(index - this->indexBase)].getAddress());
     }
@@ -39,7 +40,7 @@ unsigned char *OneWireAddressTable::getAddress(unsigned int index) {
 bool OneWireAddressTable::contains(unsigned char *address) {
   bool retval = false;
 
-  for (unsigned int i = 0; i < this->tableSize; i++) {
+  for (unsigned int i = 0; i < this->size; i++) {
     if (!memcmp(address, this->table[i].getAddress(), 8)) {
       retval = true;
     } 
@@ -47,10 +48,10 @@ bool OneWireAddressTable::contains(unsigned char *address) {
   return(retval);
 }
 
-void OneWireAddressTable::saveToEeprom(int address) {
-  EEPROM.put(address, this->table);
+void OneWireAddressTable::save() {
+  EEPROM.put(this->eepromAddress, this->table);
 }
 
-void OneWireAddressTable::loadFromEeprom(int address) {
-  EEPROM.get(address, this->table);
+void OneWireAddressTable::load() {
+  EEPROM.get(this->eepromAddress, this->table);
 }

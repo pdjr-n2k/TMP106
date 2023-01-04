@@ -8,11 +8,12 @@ class OneWireAddressTable {
   public:
 
     /******************************************************************
-     * Create a new OneWireAddressTable with <tableSize> 64-bit entries
-     * all bytes initialised to 0xff. <indexBase> specifies the offset
+     * Create a new OneWireAddressTable with size 64-bit entries and
+     * initialise all bytes to 0xff. A persistent copy should be saved
+     * to EEPROM at eepromAddress. indexBase specifies the offset
      * applied by the client application to the table base index.
      */
-    OneWireAddressTable(unsigned int tableSize, unsigned int indexBase = 0);
+    OneWireAddressTable(unsigned int size, int eepromAddress, unsigned int indexBase = 0);
 
     /******************************************************************
      * Copy the 8-byte <address> to this address table at entry
@@ -38,18 +39,18 @@ class OneWireAddressTable {
     bool contains(unsigned char *address);
     
     /******************************************************************
-     * Save the contents of the table to EEPROM starting at <address>.
+     * Save the contents of the table to EEPROM.
      */
-    void saveToEeprom(int address);
+    void save();
     
     /******************************************************************
-     * Load the contents of EEPROM starting at <address> into the
-     * table.
+     * Load the contents of the table from EEPROM.
      */
-    void loadFromEeprom(int address);
+    void load();
 
   private:
-    unsigned int tableSize;
+    unsigned int size;
+    int eepromAddress;
     unsigned int indexBase;
     OneWireAddress *table;
 
