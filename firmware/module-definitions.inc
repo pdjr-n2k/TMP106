@@ -220,4 +220,5 @@ unsigned char getStatusLedsStatus() {
         SENSOR_LEDS[sensor] = flashOn;
     }
   }
+  return(status);
 }
