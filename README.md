@@ -18,9 +18,20 @@ Multiple **TMP106** modules can be installed on a single NMEA bus.
 
 **TMP106** uses the
 [Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
-temperature sensor and provides six electrically isolated three-pole
-terminals for each sensors +5VD, GND and bus connections.
+temperature sensor.
+These devices connect to the **TMP106** over a OneWire bus and are
+individually identified by a hardware address which the module
+configuration process uses to uniquely associate each device with a
+temperature sensor channel.
+
+The module has six electrically isolated three-pole terminal blocks
+(labelled A through F) which allow temperature sensor devices to be
+connected to the OneWire bus.
+Each terminal block provides +5VD, GND and data connections all of
+which must be wired to a connected sensor.
 Two-wire (parasitic mode) operation of the DS18B20 is not supported.
+Note that a DS18B20 temperature sensor can be connected to any terminal
+block and will always report on its configured sensor channel.
 
 The total maximum length of all sensor connection wires is limited and
 depends somewhat on environmental temperature and electrical noise.
@@ -32,13 +43,16 @@ using twisted pair cable.
 **TMP106** treats each connected temperature sensor as an independent
 device identified by a unique, user configured, address known in NMEA
 parlance as an instance number.
+
 PGN 130316 temperature reports are broadcast regularly for each sensor
 at user defined time intervals.
-
-The maximum transmission rate of PGN 130316 by a network module the **TMP106** is
-limited to one message every 500ms 
-Each sensor channel can be read at a minumum interval of two seconds and
-readings are simply queued for subsequent transmission.
+The minimum time interval between successive PGN 130316 broadcasts is
+limited by the NMEA 2000 specification in two ways.
+Firstly, an absolute limit on the module transmission rate means that
+the **TMP106** will not broadcast more than two temperature reports
+per second.
+Secondly, a limit on the minimum reporting interval of a single
+temperature instance is limited to two seconds.
 
 ## Module configuration
 
