@@ -23,6 +23,8 @@ ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPRO
 
 ProcessQueue<TemperatureReading> PGN130316_TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
 
+LedState SENSOR_LEDS[6] = { off, off, off, off, off, off };
+
 /**********************************************************************
  * Map <temperatureReading> into a PGN 130316 message and transmit it
  * onto the bus, flashing the transmit LED appropriately.
@@ -65,6 +67,7 @@ void sampleSensorMaybe() {
     for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
       unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
       if ((address) && (now > deadlines[sensor])) {
+        SENSOR_LEDS[sensor] = flash;
         temperatureReading.sensor = sensor;
         temperatureReading.sid = sid;
         temperatureReading.temperature = (sensors.getTempC(address) + 273.0);
@@ -188,4 +191,9 @@ void configureModuleSettingMaybe(int value, bool longPress) {
         break;
     }
   }
+}
+
+#define GET_STATUS_LEDS_STATUS
+unsigned char getStatusLedsStatus() {
+
 }
