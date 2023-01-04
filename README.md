@@ -55,9 +55,9 @@ Secondly, a limit on the minimum reporting interval of a single
 temperature instance is limited to two seconds.
 
 These timing constraints raise a potential issue: if every sensor
-attempts to transmit at the maximum rate, then six sensor reports be
-generated every two seconds whilst only four messages can actually be
-transmitted in the same time interval.
+attempts to transmit at the maximum rate, then six sensor reports will
+be generated every two seconds whilst only four reports can actually
+be transmitted in the same time interval.
 The reporting intervals of each channel must be chosen so that overrun
 and possible data loss do not become an issue.
 

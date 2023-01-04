@@ -195,5 +195,29 @@ void configureModuleSettingMaybe(int value, bool longPress) {
 
 #define GET_STATUS_LEDS_STATUS
 unsigned char getStatusLedsStatus() {
+  unsigned char status = 0x00;
 
+  for (unsigned int sensor = 0; i < SENSOR_COUNT; i++) {
+    switch (SENSOR_LEDS[sensor]) {
+      case on:
+        status |= (0x01 << sensor);
+        break;
+      case off:
+        status &= ~(0x01 << sensor);
+        break;
+      case once:
+        status |= (0x01 << sensor);
+        SENSOR_LEDS[sensor] = off;
+        break;
+      case flash:
+        SENSOR_LEDS[sensor] = flashOn;
+        break;
+      case flashOn:
+        status |= (0x01 << sensor);
+        SENSOR_LEDS[sensor] = flashOff;
+      case flashOff:
+        status &= ~(0x01 << sensor);
+        SENSOR_LEDS[sensor] = flashOn;
+    }
+  }
 }
