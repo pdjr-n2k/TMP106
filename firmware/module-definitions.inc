@@ -34,16 +34,16 @@ ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPRO
  * readings are removed from the queue and processed for immediate
  * transmission on the NMEA bus.
  * 
- * TRANSMIT_QUEUE_LENGTH specifies the number of readings that can be
- * buffered;
+ * TEMPERATURE_READING_QUEUE_LENGTH specifies the number of readings
+ * that can be buffered;
  * PGN130316_MAX_TRANSMIT_INTERVAL specifies the processing interval
  * and since processing equates to transmission of a PGN 130316 message
  * we set this to that PGNs maximum rate as defined in the NMEA 2000
  * specification.
- * transmitPGN230326 is the callback function which arranges output of
- * temperatue readings onto the NMEA bus.
+ * transmitPGN230326 is the queue processing callback function which
+ * arranges output of temperatue readings onto the NMEA bus.
  */
-ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
+ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_READING_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
 
 /**********************************************************************
  * A control buffer which allows the application to set the required
