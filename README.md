@@ -25,15 +25,13 @@ individually identified by a hardware address.
 The module has six electrically isolated three-pole terminal blocks
 (labelled A through F) which allow temperature sensor devices to be
 connected to the OneWire bus.
-Each terminal block provides +5VD, GND and data connections all of
-which must be wired to a connected sensor.
-Two-wire (parasitic mode) operation of the DS18B20 is not supported.
-Note that a DS18B20 temperature sensor can be connected to any terminal
-block and will always report on its configured sensor channel.
+Each terminal block provides +5VDC, GND and data connections all of
+which must be wired to a connected sensor: the two-wire (parasitic)
+operating  mode of the DS18B20 is not supported.
 
-The total length of the OneWire bus is limited and the maximum length
-of all sensor connection depends somewhat on environmental temperature
-and electrical noise.
+The total length of a OneWire bus is limited and the maximum length
+of all sensor connections to the **TMP106** depends somewhat on
+environmental temperature and electrical noise.
 Twenty metres total wire length should be feasible in all situations
 using twisted pair cable.
 
@@ -41,18 +39,13 @@ using twisted pair cable.
 
 **TMP106** treats each connected temperature sensor as an independent
 device and maintains a persistent mapping between a sensor's OneWire
-hardware address and its unique, user configured, NMEA address (NMEA
-refer to this as an instance number).
+hardware address and its user configured NMEA address (in NMEA-speak
+this address is termed an 'instance number').
 
-PGN 130316 temperature reports are broadcast regularly for each sensor
-at user defined time intervals.
-The minimum time interval between successive PGN 130316 broadcasts is
-limited by the NMEA 2000 specification in two ways.
-Firstly, an absolute limit on the module transmission rate means that
-the **TMP106** will not broadcast more than two temperature reports
-per second.
-Secondly, a limit on the minimum reporting interval of a single
-temperature instance is limited to two seconds.
+**TMP106** can transmit PGN 130316 temperature reports at a maximum
+rate of two reports per second.
+The rate at which a sensor channel can report its temperature is user
+configurable up to a maximum rate of one report every two seconds.
 
 These timing constraints raise a potential issue: if every sensor
 attempts to transmit at the maximum rate, then six sensor reports will
