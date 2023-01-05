@@ -19,40 +19,40 @@ Multiple **TMP106** modules can be installed on a single NMEA bus.
 **TMP106** uses the
 [Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
 temperature sensor.
-These devices connect to the **TMP106** over a OneWire bus and are
-individually identified by a hardware address.
 
 The module has six electrically isolated three-pole terminal blocks
-(labelled A through F) which allow temperature sensor devices to be
-connected to the OneWire bus.
+(labelled A through F) to which temperature sensor devices can be
+connected.
 Each terminal block provides +5VDC, GND and data connections all of
 which must be wired to a connected sensor: the two-wire (parasitic)
 operating  mode of the DS18B20 is not supported.
 
-The total length of a OneWire bus is limited and the maximum length
-of all sensor connections to the **TMP106** depends somewhat on
-environmental temperature and electrical noise.
-Twenty metres total wire length should be feasible in all situations
-using twisted pair cable.
+The total maximum length of cable that can be used to connect all
+sensors is limited and the depends somewhat on environmental
+conditions (particularly temperature and electrical noise) and the
+type of cable used to make sensor connection.
+The sum of all sensor connection cable lengths should be kept below
+20 metres.
 
 ## Temperature reporting
 
 **TMP106** treats each connected temperature sensor as an independent
-device and maintains a persistent mapping between a sensor's OneWire
-hardware address and its user configured NMEA address (in NMEA-speak
-this address is termed an 'instance number').
+device and maintains a persistent 1:1 mapping between a sensor's
+hardware address and its user configured NMEA instance number.
 
-**TMP106** can transmit PGN 130316 temperature reports at a maximum
+The module can transmit PGN 130316 temperature reports at a maximum
 rate of two reports per second.
 The rate at which a sensor channel can report its temperature is user
 configurable up to a maximum rate of one report every two seconds.
 
-These timing constraints raise a potential issue: if every sensor
-attempts to transmit at the maximum rate, then six sensor reports will
-be generated every two seconds whilst only four reports can actually
+These timing constraints derive from implementation of the NMEA 2000
+specification and raise a potential issue: if every sensor attempts
+to transmit at the maximum rate, then six sensor reports will be
+generated every two seconds whilst only four reports can actually
 be transmitted in the same time interval.
-The reporting intervals of each channel must be chosen so that overrun
-and possible data loss do not become an issue.
+The reporting intervals of at least some sensor channels on a module
+installation must be chosen so that overrun and possible data loss
+do not become an issue.
 
 ## Module configuration
 
