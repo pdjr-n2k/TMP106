@@ -197,7 +197,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
 unsigned char getStatusLedsStatus() {
   unsigned char status = 0x00;
 
-  for (unsigned int sensor = 0; i < SENSOR_COUNT; i++) {
+  for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
     switch (SENSOR_LEDS[sensor]) {
       case on:
         status |= (0x01 << sensor);
@@ -220,4 +220,5 @@ unsigned char getStatusLedsStatus() {
         SENSOR_LEDS[sensor] = flashOn;
     }
   }
+  return(status);
 }
