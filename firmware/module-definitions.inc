@@ -13,21 +13,53 @@ enum OperatingMode { normal, registration } OPERATING_MODE = normal;
 struct TemperatureReading { unsigned int sensor; unsigned char sid; float temperature; };
 void transmitPGN130316(TemperatureReading temperatureReading);
 
+/**********************************************************************
+ * Create a OneWire bus instance on the designated GPIO pin and pass
+ * then create a DallasTemperature instance for operating DS18B20
+ * devices on the bus.
+ */
 OneWire oneWire(GPIO_ONE_WIRE_BUS);
-
 DallasTemperature sensors(&oneWire);
+
+
 
 OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
 
 ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS);
 
-ProcessQueue<TemperatureReading> PGN130316_TRANSMIT_QUEUE(TRANSMIT_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
-
-LedState SENSOR_LEDS[6] = { off, off, off, off, off, off };
+/**********************************************************************
+ * Create a ProcessQueue instance for buffering and processing
+ * temperature sensor readings: sensor readings are taken at the rates
+ * specified in the module configurtion and placed into the queue;
+ * readings are removed from the queue and processed for immediate
+ * transmission on the NMEA bus.
+ * 
+ * TEMPERATURE_READING_QUEUE_LENGTH specifies the number of readings
+ * that can be buffered;
+ * PGN130316_MAX_TRANSMIT_INTERVAL specifies the processing interval
+ * and since processing equates to transmission of a PGN 130316 message
+ * we set this to that PGNs maximum rate as defined in the NMEA 2000
+ * specification.
+ * transmitPGN230326 is the queue processing callback function which
+ * arranges output of temperatue readings onto the NMEA bus.
+ */
+ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_READING_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
 
 /**********************************************************************
- * Map <temperatureReading> into a PGN 130316 message and transmit it
- * onto the bus, flashing the transmit LED appropriately.
+ * A control buffer which allows the application to set the required
+ * state of the sensor channel LEDs. The buffer is processed at regular
+ * intervals by the getStatusLedsStatus() callback which updates the
+ * LEDs to the condition of the buffer.
+ */
+LedState SENSOR_LED_CONTROL[6] = { off, off, off, off, off, off };
+
+/**********************************************************************
+ * This callback function is registered with the ProcessQueue instance
+ * that queues temperature readings. The function is called regularly
+ * by the queue process() function and works to translate a passed
+ * temperature reading into a PGN 130316 message before promptly
+ * transmitting it onto the NMEA bus, flashing the transmit LED
+ * appropriately.
  */
 void transmitPGN130316(TemperatureReading temperatureReading) {
   tN2kMsg message;
@@ -67,11 +99,11 @@ void sampleSensorMaybe() {
     for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
       unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
       if ((address) && (now > deadlines[sensor])) {
-        SENSOR_LEDS[sensor] = flash;
+        SENSOR_LED_CONTROL[sensor] = once;
         temperatureReading.sensor = sensor;
         temperatureReading.sid = sid;
         temperatureReading.temperature = (sensors.getTempC(address) + 273.0);
-        PGN130316_TRANSMIT_QUEUE.enqueue(temperatureReading);
+        TEMPERATURE_READING_PROCESS_QUEUE.enqueue(temperatureReading);
         deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)));
       }
     }
@@ -129,6 +161,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
         switch (OPERATING_MODE) {
           case normal: // In normal mode a long press signals entry of a parameter address
             address = value;
+            TRANSMIT_LED_STATE = flash;
             resetDeadline = (now + CONFIGURATION_INACTIVITY_TIMEOUT);
             break;
           case registration: // In registration mode a long press has no meaning
@@ -162,6 +195,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
                 if ((address >= 0) && (address < CONFIGURATION_SIZE)) {
                   MODULE_CONFIGURATION.setByte(address, value);
                   MODULE_CONFIGURATION.save();
+                  TRANSMIT_LED_STATE = off;
                 }
                 address = 0xFF;
                 break;
@@ -193,12 +227,18 @@ void configureModuleSettingMaybe(int value, bool longPress) {
   }
 }
 
+/**********************************************************************
+ * Overrides getStatusLedsStatus() defined in NOP100. Returns a single
+ * byte suitable for direct transfer to the SIPO device used to drive
+ * the module status LEDs. The status byte value is derived from the
+ * control values in the SENSOR_LED_CONTROL array.
+ */
 #define GET_STATUS_LEDS_STATUS
 unsigned char getStatusLedsStatus() {
   unsigned char status = 0x00;
 
   for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-    switch (SENSOR_LEDS[sensor]) {
+    switch (SENSOR_LED_CONTROL[sensor]) {
       case on:
         status |= (0x01 << sensor);
         break;
@@ -207,17 +247,17 @@ unsigned char getStatusLedsStatus() {
         break;
       case once:
         status |= (0x01 << sensor);
-        SENSOR_LEDS[sensor] = off;
+        SENSOR_LED_CONTROL[sensor] = off;
         break;
       case flash:
-        SENSOR_LEDS[sensor] = flashOn;
+        SENSOR_LED_CONTROL[sensor] = flashOn;
         break;
       case flashOn:
         status |= (0x01 << sensor);
-        SENSOR_LEDS[sensor] = flashOff;
+        SENSOR_LED_CONTROL[sensor] = flashOff;
       case flashOff:
         status &= ~(0x01 << sensor);
-        SENSOR_LEDS[sensor] = flashOn;
+        SENSOR_LED_CONTROL[sensor] = flashOn;
     }
   }
   return(status);

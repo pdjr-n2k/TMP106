@@ -17,4 +17,4 @@ sampleSensorMaybe();
  * Process the transmit queue transmitting PGN 130316 messages for any
  * queued temperature readings.
  */
-PGN130316_TRANSMIT_QUEUE.process();
+TEMPERATURE_READING_PROCESS_QUEUE.process();
