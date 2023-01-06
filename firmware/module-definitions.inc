@@ -46,14 +46,6 @@ ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPRO
 ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_READING_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
 
 /**********************************************************************
- * A control buffer which allows the application to set the required
- * state of the sensor channel LEDs. The buffer is processed at regular
- * intervals by the getStatusLedsStatus() callback which updates the
- * LEDs to the condition of the buffer.
- */
-LedState SENSOR_LED_CONTROL[6] = { off, off, off, off, off, off };
-
-/**********************************************************************
  * This callback function is registered with the ProcessQueue instance
  * that queues temperature readings. The function is called regularly
  * by the queue process() function and works to translate a passed
@@ -72,7 +64,7 @@ void transmitPGN130316(TemperatureReading temperatureReading) {
     (double) ((MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) * 255) + MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE))
   );
   NMEA2000.SendMsg(message);
-  TRANSMIT_LED_STATE = once;
+  TRANSMIT_LED.setLedState(0, StatusLeds::once);
 }
 
 /**********************************************************************
@@ -99,7 +91,7 @@ void sampleSensorMaybe() {
     for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
       unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
       if ((address) && (now > deadlines[sensor])) {
-        SENSOR_LED_CONTROL[sensor] = once;
+        STATUS_LEDS.setLedState(sensor, StatusLeds::once);
         temperatureReading.sensor = sensor;
         temperatureReading.sid = sid;
         temperatureReading.temperature = (sensors.getTempC(address) + 273.0);
@@ -161,7 +153,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
         switch (OPERATING_MODE) {
           case normal: // In normal mode a long press signals entry of a parameter address
             address = value;
-            TRANSMIT_LED_STATE = flash;
+            TRANSMIT_LED.setLedState(0, StatusLeds::flash);
             resetDeadline = (now + CONFIGURATION_INACTIVITY_TIMEOUT);
             break;
           case registration: // In registration mode a long press has no meaning
@@ -176,7 +168,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
                 switch (value) {
                   case 0x00: // mode change requires value to be zero
                     OPERATING_MODE = registration;
-                    TRANSMIT_LED_STATE = flash;
+                    TRANSMIT_LED.setLedState(0, StatusLeds::flash);
                     break;
                   default:
                     break;
@@ -195,7 +187,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
                 if ((address >= 0) && (address < CONFIGURATION_SIZE)) {
                   MODULE_CONFIGURATION.setByte(address, value);
                   MODULE_CONFIGURATION.save();
-                  TRANSMIT_LED_STATE = off;
+                  TRANSMIT_LED.setLedState(0, StatusLeds::off);
                 }
                 address = 0xFF;
                 break;
@@ -205,7 +197,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
             switch (value) {
               case 0x00:
                 OPERATING_MODE = normal;
-                TRANSMIT_LED_STATE = off;
+                TRANSMIT_LED.setLedState(0, StatusLeds::off);
                 break;
               case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
                 if (getNewAddressFromBus(deviceAddress)) {
@@ -225,40 +217,4 @@ void configureModuleSettingMaybe(int value, bool longPress) {
         break;
     }
   }
-}
-
-/**********************************************************************
- * Overrides getStatusLedsStatus() defined in NOP100. Returns a single
- * byte suitable for direct transfer to the SIPO device used to drive
- * the module status LEDs. The status byte value is derived from the
- * control values in the SENSOR_LED_CONTROL array.
- */
-#define GET_STATUS_LEDS_STATUS
-unsigned char getStatusLedsStatus() {
-  unsigned char status = 0x00;
-
-  for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-    switch (SENSOR_LED_CONTROL[sensor]) {
-      case on:
-        status |= (0x01 << sensor);
-        break;
-      case off:
-        status &= ~(0x01 << sensor);
-        break;
-      case once:
-        status |= (0x01 << sensor);
-        SENSOR_LED_CONTROL[sensor] = off;
-        break;
-      case flash:
-        SENSOR_LED_CONTROL[sensor] = flashOn;
-        break;
-      case flashOn:
-        status |= (0x01 << sensor);
-        SENSOR_LED_CONTROL[sensor] = flashOff;
-      case flashOff:
-        status &= ~(0x01 << sensor);
-        SENSOR_LED_CONTROL[sensor] = flashOn;
-    }
-  }
-  return(status);
 }
