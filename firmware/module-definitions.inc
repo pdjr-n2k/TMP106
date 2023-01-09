@@ -17,6 +17,15 @@ unsigned char* configurationInitialiser(int& size) {
   return(buffer);
 }
 
+#define CONFIGURATION_CHANGE_HANDLER
+
+void configurationChangeHandler(unsigned int index, unsigned char value) {
+  switch (index) {
+    case CAN_SOURCE_INDEX: break;// No action neccessary - handled by NMEA2000 library.
+    default: break;
+  }
+
+}
 
 
 /**********************************************************************
@@ -44,7 +53,7 @@ DallasTemperature sensors(&oneWire);
 
 
 
-OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
+OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS);
 
 /**********************************************************************
  * Create a ProcessQueue instance for buffering and processing
@@ -118,7 +127,7 @@ void sampleSensorMaybe() {
         deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte(configurationIndex(sensor, CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET))));
       }
     }
-    deadline = (now + SENSOR_SAMPLE_INTERVAL);
+    deadline = (now + TEMPERATURE_READING_SAMPLE_INTERVAL);
   }
 }
 
