@@ -13,17 +13,6 @@
 DEVICE_ADDRESSES.load();
 
 /**********************************************************************
- * Load sensor NMEA configuration from EEPROM. If the configuration is
- * un-initialised then populate it with default values and save this
- * now initialised data back to EEPROM.
- */
-MODULE_CONFIGURATION.load();
-if (!MODULE_CONFIGURATION.inUse()) {
-    setConfigurationDefaults();
-    MODULE_CONFIGURATION.save();
-}
-
-/**********************************************************************
  * Start sensor operation on the OneWire bus.
  */
 sensors.begin();

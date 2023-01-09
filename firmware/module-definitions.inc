@@ -1,3 +1,24 @@
+#define CONFIGURATION_INITIALISER
+
+int configurationIndex(int sensor, int offset) {
+  return(SENSOR_CHANNEL_INDEX_BASE + ((sensor * SENSOR_CONFIGURATION_BLOCK_SIZE) + offset));
+}
+
+unsigned char* configurationInitialiser(int& size) {
+  static unsigned char *buffer = new unsigned char[size = CONFIGURATION_SIZE];
+  buffer[0] = CAN_SOURCE_DEFAULT_VALUE;
+  for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
+    buffer[configurationIndex(sensor, SENSOR_INSTANCE_OFFSET)] = 0xff;
+    buffer[configurationIndex(sensor, SENSOR_SAMPLE_INTERVAL_OFFSET)] = (sensor < 2)?0x03:((sensor < 4)?0x07:0x0d);
+    buffer[configurationIndex(sensor, SENSOR_TEMPERATURE_SOURCE_OFFSET)] = 0x02;
+    buffer[configurationIndex(sensor, SENSOR_SET_POINT_HI_BYTE_OFFSET)] = 0xff;
+    buffer[configurationIndex(sensor, SENSOR_SET_POINT_LO_BYTE_OFFSET)] = 0xff;
+  }
+  return(buffer);
+}
+
+
+
 /**********************************************************************
  * module-definitions.inc
  *
@@ -24,8 +45,6 @@ DallasTemperature sensors(&oneWire);
 
 
 OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS, SENSOR_CHANNEL_INDEX_BASE);
-
-ModuleConfiguration MODULE_CONFIGURATION(CONFIGURATION_SIZE, CONFIGURATION_EEPROM_ADDRESS);
 
 /**********************************************************************
  * Create a ProcessQueue instance for buffering and processing
@@ -58,10 +77,10 @@ void transmitPGN130316(TemperatureReading temperatureReading) {
   SetN2kPGN130316(
     message,
     temperatureReading.sid, 
-    MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET),
-    (tN2kTempSource) MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET),
+    MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, SENSOR_INSTANCE_OFFSET)),
+    (tN2kTempSource) MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, SENSOR_TEMPERATURE_SOURCE_OFFSET)),
     (double) temperatureReading.temperature,
-    (double) ((MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE) * 255) + MODULE_CONFIGURATION.getByte((temperatureReading.sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE))
+    (double) ((MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, SENSOR_SET_POINT_HI_BYTE_OFFSET)) * 255) + MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, SENSOR_SET_POINT_LO_BYTE_OFFSET)))
   );
   NMEA2000.SendMsg(message);
   TRANSMIT_LED.setLedState(0, StatusLeds::once);
@@ -96,24 +115,10 @@ void sampleSensorMaybe() {
         temperatureReading.sid = sid;
         temperatureReading.temperature = (sensors.getTempC(address) + 273.0);
         TEMPERATURE_READING_PROCESS_QUEUE.enqueue(temperatureReading);
-        deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)));
+        deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte(configurationIndex(sensor, SENSOR_SAMPLE_INTERVAL_OFFSET))));
       }
     }
     deadline = (now + SENSOR_SAMPLE_INTERVAL);
-  }
-}
-
-/**********************************************************************
- * setConfigurationDefaults initialises SENSOR_CONFIGURATION with a
- * set of default values.
- */
-void setConfigurationDefaults() {
-  for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET, 0xFF);
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET, (sensor < 2)?0x03:((sensor < 5)?0x07:0x0D));
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET, 0x02);
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_HI_BYTE, 0xFF);
-    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_SET_POINT_LO_BYTE, 0xFF);
   }
 }
 
@@ -177,7 +182,7 @@ void configureModuleSettingMaybe(int value, bool longPress) {
               case 0xFE: // set instance number block
                 if (value <= 247) {
                   for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-                    MODULE_CONFIGURATION.setByte((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + CONFIGURATION_SENSOR_INSTANCE_OFFSET, value++);
+                    MODULE_CONFIGURATION.setByte(configurationIndex(sensor, SENSOR_INSTANCE_OFFSET), value++);
                   }
                   MODULE_CONFIGURATION.save();
                 }
@@ -218,3 +223,4 @@ void configureModuleSettingMaybe(int value, bool longPress) {
     }
   }
 }
+
