@@ -80,6 +80,7 @@
 /**********************************************************************
  * Module configuration stuff.
  */
+#define CONFIGURATION_EEPROM_ADDRESS 0
 #define CONFIGURATION_OFFSET_TO_FIRST_SENSOR_BLOCK 1
 #define CONFIGURATION_SENSOR_BLOCK_SIZE 5
 #define CONFIGURATION_SENSOR_INSTANCE_OFFSET 0
@@ -89,6 +90,10 @@
 #define CONFIGURATION_SENSOR_SET_POINT_LO_BYTE_OFFSET 4
 #define CONFIGURATION_SIZE (CONFIGURATION_OFFSET_TO_FIRST_SENSOR_BLOCK + (SENSOR_CHANNEL_COUNT * CONFIGURATION_SENSOR_BLOCK_SIZE))
 
+/**********************************************************************
+ * Sensor device hardware addresses are persisted in EEPROM at this
+ * address.
+ */
 #define DEVICE_ADDRESSES_EEPROM_ADDRESS 100
 
 /**********************************************************************
