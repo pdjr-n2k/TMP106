@@ -99,11 +99,11 @@
 /**********************************************************************
  * The frequency at which to request sensor temperature readings.
  */
-#define SENSOR_SAMPLE_INTERVAL 1000
+#define TEMPERATURE_READING_QUEUE_LENGTH 20
+#define TEMPERATURE_READING_SAMPLE_INTERVAL 1000
 
 /**********************************************************************
  * The frequency at which to poll the message transmission queue.
  */
 #define PGN130316_MAX_TRANSMIT_INTERVAL 500UL
 
-#define TEMPERATURE_READING_QUEUE_LENGTH 20
