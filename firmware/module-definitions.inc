@@ -7,8 +7,8 @@ int configurationIndex(int sensor, int offset) {
 unsigned char* configurationInitialiser(int& size, unsigned int eepromAddress) {
   static unsigned char *buffer = new unsigned char[size = CONFIGURATION_SIZE];
   EEPROM.get(eepromAddress, buffer);
-  if (buffer[0] == 0xff) {
-    buffer[0] = CAN_SOURCE_DEFAULT_VALUE;
+  if (buffer[CAN_SOURCE_INDEX] == 0xff) {
+    buffer[CAN_SOURCE_INDEX] = CAN_SOURCE_DEFAULT_VALUE;
     for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
       buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET)] = 0xff;
       buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)] = (sensor < 2)?0x03:((sensor < 4)?0x07:0x0d);
