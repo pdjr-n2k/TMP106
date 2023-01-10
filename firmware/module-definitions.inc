@@ -4,15 +4,18 @@ int configurationIndex(int sensor, int offset) {
   return(CONFIGURATION_OFFSET_TO_FIRST_SENSOR_BLOCK + ((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + offset));
 }
 
-unsigned char* configurationInitialiser(int& size) {
+unsigned char* configurationInitialiser(int& size, unsigned int eepromAddress) {
   static unsigned char *buffer = new unsigned char[size = CONFIGURATION_SIZE];
-  buffer[0] = CAN_SOURCE_DEFAULT_VALUE;
-  for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-    buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET)] = 0xff;
-    buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)] = (sensor < 2)?0x03:((sensor < 4)?0x07:0x0d);
-    buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET)] = 0x02;
-    buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SET_POINT_HI_BYTE_OFFSET)] = 0xff;
-    buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SET_POINT_LO_BYTE_OFFSET)] = 0xff;
+  EEPROM.get(eepromAddress, buffer);
+  if (buffer[0] == 0xff) {
+    buffer[0] = CAN_SOURCE_DEFAULT_VALUE;
+    for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
+      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET)] = 0xff;
+      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)] = (sensor < 2)?0x03:((sensor < 4)?0x07:0x0d);
+      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET)] = 0x02;
+      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SET_POINT_HI_BYTE_OFFSET)] = 0xff;
+      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SET_POINT_LO_BYTE_OFFSET)] = 0xff;
+    }
   }
   return(buffer);
 }
@@ -24,7 +27,6 @@ void configurationChangeHandler(unsigned int index, unsigned char value) {
     case CAN_SOURCE_INDEX: break;// No action neccessary - handled by NMEA2000 library.
     default: break;
   }
-
 }
 
 
