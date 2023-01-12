@@ -105,8 +105,7 @@ for a description of the functions available in extended mode.
 
 The module can be switched between operating modes by:
 
-1. Setting the value 0x00 on the ADDR/VALUE DIL switch.
-2. Pressing and releasing PRG.
+1. Pressing and promptly releasing PRG.
 
 The module will automatically revert from extended mode to normal mode
 if there is no user input for a period of 30 seconds.
@@ -159,7 +158,8 @@ If registration is successful the LED associated with the selected
 channel will steadily illuminate.
 
 If the DS18B20 cannot be detected and/or registered withing 20 seconds
-then the registration attempt will be aborted.
+then the registration attempt will be aborted and the associated LED
+will remain off.
 
 #### De-registering a sensor
 
@@ -230,15 +230,21 @@ host NMEA bus.
 
 1. Enter the address of the sensor instance number on the
    ADDR/VALUE DIL switch.
-2. Press and hold the PRG button for at least one second before
-   release.
+2. Press and hold the PRG button for 1s before releasing.
    The module's transmit LED will begin to flash rapidly.
 3. Enter the instance number you wish to use for the selected sensor
    channel on the ADDR/VALUE DIL switch.
 4. Press and release the PRG button.
    The module's transmit LED will stop flashing.
 
-### Set the sampling interval of a single sensor channel
+Select your instance numbers with care: the number used must not be
+in use by any other temperature sensor on the host NMEA bus and
+must be in the range 0 through 252.
+
+You can disable a sensor channel by setting its instance number to
+0xff.
+
+#### Set any property on a sensor channel
 
 Sensor transmission intervals are set in a similar way to sensor instance
 numbers by specifying an appropriate parameter address and value for
@@ -263,11 +269,6 @@ The module will immediately begin transmitting tempersture sensor
 report messages for all connected sensors on their configured instance
 numbers.
 
-Select your instance numbers with care: the number used must not be
-in use by any other temperature sensor on the host NMEA bus and
-must be in the range 0 through 247.
-
-You can disable the module by setting its instance number to 0xff.
 
 Setting the module's default transmission interval
 In most cases the default transmission interval of four seconds will not need to be altered. The NMEA 2000 specification dictates an appropriate transmission frequency range for PGN 127501 and it is sensible to respect this constraint.
