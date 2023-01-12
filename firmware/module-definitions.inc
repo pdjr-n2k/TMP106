@@ -21,9 +21,9 @@ unsigned char* configurationInitialiser(int& size, unsigned int eepromAddress) {
   return(buffer);
 }
 
-#define CONFIGURATION_CHANGE_HANDLER
+#define CONFIGURATION_VALIDATOR
 
-bool configurationChangeHandler(unsigned int index, unsigned char value) {
+bool configurationValidator(unsigned int index, unsigned char value) {
   bool retval = false;
   if (OPERATING_MODE == normal) {
     switch (index) {
@@ -51,9 +51,58 @@ bool configurationChangeHandler(unsigned int index, unsigned char value) {
   }
 }
 
-#define PRG_FUNCTION_HANDLER
-int prgFunctionHandler(unsigned char code) {
-   unsigned char deviceAddress[8];
+#define EXTENDED_INTERACT
+int extendedInteract(unsigned int value, bool longPress) {
+  static unsigned int functionCode;
+  static unsigned long deadline = 0;
+  unsigned char deviceAddress[8];
+
+  switch (longPress) {
+    case true:
+      functionCode = value;
+      retval = 1;
+      break;
+    case false;
+      switch (functionCode) {
+        case 0x01: // Detect sensor and assign to channel 1
+        case 0x02:
+        case 0x03:
+        case 0x04:
+        case 0x05:
+        case 0x06:
+          if (getNewAddressFromBus(deviceAddress)) {
+            DEVICE_ADDRESSES.setAddress((functionCode - 1), deviceAddress);
+            DEVICE_ADDRESSES.save();
+          }
+          break;
+        case 0x10: // De-assign sensor on channel 1
+        case 0x20:
+        case 0x30:
+        case 0x40:
+        case 0x50:
+        case 0x60:
+          DEVICE_ADDRESSES.clearAddress(value >> 4);
+          DEVICE_ADDRESSES.save();
+          break;
+        case 0xff: // Set instance address block
+          if (value < 247) {
+            for (unsigned int sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+              MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET), value++);
+            }
+            retval = 2;
+          } else {
+            retval = -2
+          }
+          break;
+        default:
+          retval = -2;
+          break;
+      }    
+      break;
+  }
+}
+
+  }
   int retval = (int) StatusLeds::LedState::off;
   switch (code) {
     case 0: // enter registration mode
@@ -100,7 +149,6 @@ int prgFunctionHandler(unsigned char code) {
  * For the NOP100 module this file is intentionally empty.
  */
 
-enum OperatingMode { normal, registration } OPERATING_MODE = normal;
 struct TemperatureReading { unsigned int sensor; unsigned char sid; float temperature; };
 void transmitPGN130316(TemperatureReading temperatureReading);
 
@@ -111,8 +159,6 @@ void transmitPGN130316(TemperatureReading temperatureReading);
  */
 OneWire oneWire(GPIO_ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-
-
 
 OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS);
 
@@ -208,89 +254,5 @@ bool getNewAddressFromBus(unsigned char *address) {
     }
   }
   return(false);
-}
-
-#define CONFIGURE_MODULE_SETTING_MAYBE
-void configureModuleSettingMaybe(int value, bool longPress) {
-  static long resetDeadline = 0UL;
-  static int address = 0xFF;
-  unsigned char deviceAddress[8];
-  long now = millis();
-
-  if (value == 0xffff) { // Perhaps cancel a timed-out protocol.
-    if ((resetDeadline != 0UL) && (now > resetDeadline)) {
-      resetDeadline = 0UL;
-      address = 0xFF;
-    }
-  } else {
-    switch (longPress) {
-      case true:
-        switch (OPERATING_MODE) {
-          case normal: // In normal mode a long press signals entry of a parameter address
-            address = value;
-            TRANSMIT_LED.setLedState(0, StatusLeds::flash);
-            resetDeadline = (now + CONFIGURATION_INACTIVITY_TIMEOUT);
-            break;
-          case registration: // In registration mode a long press has no meaning
-            break;
-        }
-        break;
-      case false: // short button press
-        switch (OPERATING_MODE) {
-          case normal: // short button press in normal mode
-            switch (address) {
-              case 0xFF: // if address not set -> then this is a special action.
-                switch (value) {
-                  case 0x00: // mode change requires value to be zero
-                    OPERATING_MODE = registration;
-                    TRANSMIT_LED.setLedState(0, StatusLeds::flash);
-                    break;
-                  default:
-                    break;
-                }
-                break;
-              case 0xFE: // set instance number block
-                if (value <= 247) {
-                  for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-                    MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET), value++);
-                  }
-                  MODULE_CONFIGURATION.save();
-                }
-                address = 0xFF;
-                break;
-              default: // address is set, so this is a configuration parameter value
-                if ((address >= 0) && (address < CONFIGURATION_SIZE)) {
-                  MODULE_CONFIGURATION.setByte(address, value);
-                  MODULE_CONFIGURATION.save();
-                  TRANSMIT_LED.setLedState(0, StatusLeds::off);
-                }
-                address = 0xFF;
-                break;
-            }
-            break;
-          case registration: // short button press in registration mode
-            switch (value) {
-              case 0x00:
-                OPERATING_MODE = normal;
-                TRANSMIT_LED.setLedState(0, StatusLeds::off);
-                break;
-              case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
-                if (getNewAddressFromBus(deviceAddress)) {
-                  DEVICE_ADDRESSES.setAddress(value, deviceAddress);
-                  DEVICE_ADDRESSES.save();
-                }
-                break;
-              case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
-                DEVICE_ADDRESSES.clearAddress(value >> 4);
-                DEVICE_ADDRESSES.save();
-                break;
-              default:
-                break;
-            }
-            break;
-        }
-        break;
-    }
-  }
 }
 
