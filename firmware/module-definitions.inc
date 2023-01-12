@@ -1,3 +1,50 @@
+/**********************************************************************
+ * module-definitions.inc
+ */
+
+/**********************************************************************
+ * Type declarations and function prototypes.
+ */
+struct TemperatureReading { unsigned int sensor; unsigned char sid; float temperature; };
+void transmitPGN130316(TemperatureReading temperatureReading);
+bool getNewAddressFromBus(unsigned char *address);
+
+/**********************************************************************
+ * Create a OneWire bus instance on the designated GPIO pin and pass
+ * then create a DallasTemperature instance for operating DS18B20
+ * devices on the bus.
+ */
+OneWire oneWire(GPIO_ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+
+/**********************************************************************
+ * Object for storing and persisting a collection of OneWire bus
+ * hardware addresses (retrieved from temperature sensors).
+ */
+OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS);
+
+/**********************************************************************
+ * Create a ProcessQueue instance for buffering and processing
+ * temperature sensor readings: sensor readings are taken at the rates
+ * specified in the module configurtion and placed into the queue;
+ * readings are removed from the queue and processed for immediate
+ * transmission on the NMEA bus.
+ * 
+ * TEMPERATURE_READING_QUEUE_LENGTH specifies the number of readings
+ * that can be buffered;
+ * PGN130316_MAX_TRANSMIT_INTERVAL specifies the processing interval
+ * and since processing equates to transmission of a PGN 130316 message
+ * we set this to that PGNs maximum rate as defined in the NMEA 2000
+ * specification.
+ * transmitPGN230326 is the queue processing callback function which
+ * arranges output of temperatue readings onto the NMEA bus.
+ */
+ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_READING_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
+
+/**********************************************************************
+ * Override of the NOP100 configurationInitialiser() function.
+ */
 #define CONFIGURATION_INITIALISER
 
 int configurationIndex(int sensor, int offset) {
@@ -21,6 +68,9 @@ unsigned char* configurationInitialiser(int& size, unsigned int eepromAddress) {
   return(buffer);
 }
 
+/**********************************************************************
+ * Override of the NOP100 configurationValidator() function.
+ */
 #define CONFIGURATION_VALIDATOR
 
 bool configurationValidator(unsigned int index, unsigned char value) {
@@ -49,20 +99,26 @@ bool configurationValidator(unsigned int index, unsigned char value) {
         break;
     }
   }
+  return(retval);
 }
 
+/**********************************************************************
+ * Override of the NOP100 extendedInteract() function.
+ */
 #define EXTENDED_INTERACT
+
 int extendedInteract(unsigned int value, bool longPress) {
   static unsigned int functionCode;
   static unsigned long deadline = 0;
   unsigned char deviceAddress[8];
+  int retval;
 
   switch (longPress) {
     case true:
       functionCode = value;
       retval = 1;
       break;
-    case false;
+    case false:
       switch (functionCode) {
         case 0x01: // Detect sensor and assign to channel 1
         case 0x02:
@@ -86,12 +142,12 @@ int extendedInteract(unsigned int value, bool longPress) {
           break;
         case 0xff: // Set instance address block
           if (value < 247) {
-            for (unsigned int sensor = 0; sensor < SENSOR_COUNT; sensor++) {
+            for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
               MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET), value++);
             }
             retval = 2;
           } else {
-            retval = -2
+            retval = -2;
           }
           break;
         default:
@@ -102,83 +158,16 @@ int extendedInteract(unsigned int value, bool longPress) {
   }
 }
 
-  }
-  int retval = (int) StatusLeds::LedState::off;
-  switch (code) {
-    case 0: // enter registration mode
-      if (OPERATING_MODE == normal) {
-        OPERATING_MODE = registration;
-        retval = (int) StatusLeds::LedState::flash;
-      } else {
-        OPERATING_MODE == normal;
-        retval = (int) StatusLeds::LedState::off;
-      }
-      break;
-    case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
-      if (OPERATING_MODE == registration) {
-        if (getNewAddressFromBus(deviceAddress)) {
-          DEVICE_ADDRESSES.setAddress(value, deviceAddress);
-          DEVICE_ADDRESSES.save();
-          OPERATING_MODE == normal;
-          retval = (int) StatusLeds::LedState::off;
-        }
-      }
-      break;
-    case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
-      if (OPERATING_MODE == registration) {
-        DEVICE_ADDRESSES.clearAddress(value >> 4);
-        DEVICE_ADDRESSES.save();
-        OPERATING_MODE == normal;
-        retval = (int) StatusLeds::LedState::off;
-      }
-      break;
-    default:
-      break;
-  }
-  return(retval);
-}
 
-/**********************************************************************
- * module-definitions.inc
- *
- * The contents of this file are included into the body of the host
- * firmware after static definitions ans should be used to furnish
- * declarations of types, variables, functions, etc. that are required
- * for implementation of a particular module application.
- *
- * For the NOP100 module this file is intentionally empty.
- */
 
-struct TemperatureReading { unsigned int sensor; unsigned char sid; float temperature; };
-void transmitPGN130316(TemperatureReading temperatureReading);
 
-/**********************************************************************
- * Create a OneWire bus instance on the designated GPIO pin and pass
- * then create a DallasTemperature instance for operating DS18B20
- * devices on the bus.
- */
-OneWire oneWire(GPIO_ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
 
-OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS);
 
-/**********************************************************************
- * Create a ProcessQueue instance for buffering and processing
- * temperature sensor readings: sensor readings are taken at the rates
- * specified in the module configurtion and placed into the queue;
- * readings are removed from the queue and processed for immediate
- * transmission on the NMEA bus.
- * 
- * TEMPERATURE_READING_QUEUE_LENGTH specifies the number of readings
- * that can be buffered;
- * PGN130316_MAX_TRANSMIT_INTERVAL specifies the processing interval
- * and since processing equates to transmission of a PGN 130316 message
- * we set this to that PGNs maximum rate as defined in the NMEA 2000
- * specification.
- * transmitPGN230326 is the queue processing callback function which
- * arranges output of temperatue readings onto the NMEA bus.
- */
-ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_READING_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
+
+
+
+
+
 
 /**********************************************************************
  * This callback function is registered with the ProcessQueue instance
