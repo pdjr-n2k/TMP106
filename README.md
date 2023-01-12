@@ -79,7 +79,9 @@ configuration of the associated sensor.
 In normal operating mode the module configuration can be updated at any
 time by modifying the discrete byte-sized values which make up the
 persistent module configuration table
-(see [Appendix I - Module configuration table](#Appendix I - Module configuration table)).
+(see
+[Appendix I - Module configuration table](#Appendix I - Module configuration table)
+).
 
 ### Extended operating mode
 
