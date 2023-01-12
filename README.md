@@ -54,12 +54,71 @@ The reporting intervals of at least some sensor channels on a module
 installation must be chosen so that overrun and possible data loss
 do not become an issue.
 
-## Module configuration
+## Module operating modes
 
-### Registering DS18B20 devices for use with TMP106
+**TMP106** provides both *normal* and *extended* operating modes.
 
-Before a DS18B20 temperature sensor can be used with TMP106 it
-must be registered.
+### Normal operating mode
+
+In normal operating mode the module takes temperature readings from
+registered sensors and broadcasts them as NMEA temperature reports for
+configured sensor channels.
+
+The transmit LED will normally be off, but will flash once each time a
+message is broadcast into the NMEA bus or, if a configuration change is
+being made, it will flash rapidly to indicate that a configuration
+address has been entered and the module is awaiting entry of a
+configuration value.
+
+Sensor channel LEDs will normally be OFF, but each sensor LED wil flash
+once each time a reading is taken from the associated temperature
+sensor or, if a configuration change is being made, it will flash twice
+to indicate that an updated value has been saved to the module
+configuration of the associated sensor. 
+
+In normal operating mode the module configuration can be updated at any
+time by modifying the discrete byte-sized values which make up the
+persistent module configuration table
+(see [Appendix I - Module configuration table](#Appendix I - Module configuration table)).
+
+### Extended operating mode
+
+In extended operating mode the module stops normal operation and
+waits for the user to enter codes that will execute functions which
+support installation and automate some aspects of module configuration.
+
+In extended operating mode the transmit LED will normally be steadily
+on, but will flash rapidly to indicate that a function code has been
+accepted and the module is awaiting entry of function argument.
+
+Sensor channel LEDs will flash continuously to indicate that a sensor
+hardware address has been registered for the associated channel and will
+remain stedily on if the registered is currently connected to the
+module.
+
+See [Appendix II - Module function table](#Appendix II - Module function table))
+for a description of the functions available in extended mode.
+
+### Switching between normal and extended operating modes
+
+The module can be switched between operating modes by:
+
+1. Setting the value 0x00 on the ADDR/VALUE DIL switch.
+2. Pressing and releasing PRG.
+
+The module will automatically revert from extended mode to normal mode
+if there is no user input for a period of 30 seconds.
+
+## Configuration of the module
+
+Before **TMP106** can perform its normal function one or more DS18B20
+temperature sensors must be registered with the module and assigned to
+a sensor channel.
+
+Additionally, each sensor channel which has a sensor assigned must have
+its NMEA properties appropriately configured.
+
+### Registering and de-registering DS18B20 temperature sensors
 
 The purpose of registration is to associate a particular physical
 sensor with a particular sensor channel.
@@ -71,114 +130,52 @@ If a DS18B20 fails or is no longer required for service with its
 host TMP106 then it must be de-registered to free-up the associated
 sensor channel for possible future use with another device.
 
-Sensor devices can be register with and de-registered from the
-TMP106 by placing the module into registration mode during which
-normal module operation is interrupted.
-
-#### Entering and exiting registration mode
-
-1. Enter the value 0x00 into the ADDR/VALUE DIL switch.
-2. Press and release the PRG button.
-
-The transmit LED will continuoulsy flash to indicate that
-registration mode is active.
-
-When you wish to leave registration mode, simply repeat this
-protocol.
-Registration mode will exit automatically after one minute of
-switch inactivity.
-
-Whilst in registration mode the channel sensor LEDs 1-6 have
-a special meaning.
-
-FLASH indicates that the corresponding sensor channel is
-associated with a DS18B20 device.
-
-ON indicates that the corresponsing sensor channel is associated with a
-DS18B20 device and that this device is currently connected to the
-TMP106.
-
-OFF indicates that the corresponding channel has no device association
-amd is thus available for sensor registration.
+Sensor devices can only be registered with and de-registered whilst
+the module is in extended mode.
 
 #### Registering a sensor
 
 1. Connect a new (as in currently not registered) DS18B20 device to an
    unoccupied sensor connection, A-F.
-2. Enter the number (between 0x01 and 0x06) of the sensor channel to which
-   the new device should be associated into the ADDR/VALUE DIL switch.
+2. Ensure that the module is in extended operating mode by checking
+   that the transmit LED is steadily on.
+   If not, switch the module into extended mode as described above.
+3. Enter the function code (between 0x01 and 0x06) of the sensor
+   channel to which the new device should be associated into the
+   ADDR/VALUE DIL switch.
    The value entered must correspond to an unregistered sensor channel:
    i.e. one associated with a display LED which is not illuminated.
-3. Press and release the PRG button.
+4. Press and hold the PRG button for 1s before releasing.
+   The transmit LED will flash continuously.
+5. Press and immediately release the PRG button.
+   The transmit LED will revert to being steadily on.
 
-Th LED associated with the selected channel will flash whilst the sensor
-bus is scanned for a new device and revert to steady illumination once
-the registration is complete and the DS18B20 is active.
+On completion of step (4), the module will scan the sensor bus looking
+for an unregistered sensor device and, if one is found, will register
+the device with the selected sensor channel.
+If registration is successful the LED associated with the selected
+channel will steadily illuminate.
 
 If the DS18B20 cannot be detected and/or registered withing 20 seconds
-then the registration attempt will be aborted and the channel sensor
-LED will switch OFF.
+then the registration attempt will be aborted.
 
 #### De-registering a sensor
 
-1. Enter the number of the channel into the high 4-bits of the ADDR/VALUE
-   DIL switch.
+1. Ensure that the module is in extended operating mode by checking
+   that the transmit LED is steadily on.
+   If not, switch the module into extended mode as described above.
+2. Enter the de-registration function code for the sensor channel you
+   wish to update into the ADDR/VALUE DIL switch.
    This will be one of the values 0x10, 0x20, 0x30, 0x40, 0x50 or 0x60.
-2. Press and release the PRG button.
+3. Press and hold the PRG button for 1s before releasing.
+   The transmit LED will flash continuously.
+4. Press and immediately release the PRG button.
+   The transmit LED will revert to being steadily on.
 
 The LED associated with the selected channel will switch off.
 
-### Configuring sensor channels
 
-A sensor channel can be configured at any time, but will only be able
-to operate if a sensor device has been associated with the channel by
-registration (see above).
-
-**TMP106** understands the following sensor channel configuration
-parameters.
-
-| Address | Name                       | Default value | Description |
-| :---:   | :---                       | :---:         | :--- |
-| 0x00    | SENSOR 1 INSTANCE NUMBER   | 0xFF          | Instance number for sensor one. |
-| 0x01    | SENSOR 1 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor one. |
-| 0x02    | SENSOR 1 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
-| 0x03    | SENSOR 1 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
-| 0x04    | SENSOR 1 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
-
-| 0x05    | SENSOR 2 INSTANCE NUMBER   | 0xFF          | Instance number for sensor two. |
-| 0x06    | SENSOR 2 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor two. |
-| 0x07    | SENSOR 2 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
-| 0x08    | SENSOR 2 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
-| 0x09    | SENSOR 2 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
-
-| 0x0A    | SENSOR 3 INSTANCE NUMBER   | 0xFF          | Instance number for sensor three. |
-| 0x0B    | SENSOR 3 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor three. |
-| 0x0C    | SENSOR 3 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
-| 0x0D    | SENSOR 3 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
-| 0x0E    | SENSOR 3 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
-
-| 0x0F    | SENSOR 4 INSTANCE NUMBER   | 0xFF          | Instance number for sensor four. |
-| 0x10    | SENSOR 4 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor four. |
-| 0x11    | SENSOR 4 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
-| 0x12    | SENSOR 4 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
-| 0x13    | SENSOR 4 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
-
-| 0x14    | SENSOR 5 INSTANCE NUMBER   | 0xFF          | Instance number for sensor five. |
-| 0x15    | SENSOR 5 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor five. |
-| 0x16    | SENSOR 5 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
-| 0x17    | SENSOR 5 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
-| 0x18    | SENSOR 5 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
-
-| 0x19    | SENSOR 6 INSTANCE NUMBER   | 0xFF          | Instance number for sensor six. |
-| 0x1A    | SENSOR 6 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor six. |
-| 0x1B    | SENSOR 6 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
-| 0x1C    | SENSOR 6 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
-| 0x1D    | SENSOR 6 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
-
-The module uses the basic configuration mechanism provided by NOP100.
-All sensors are disabled by default.
-
-### Setting sensor instance numbers
+### Configuring a sensor channel's NMEA properties
 
 Each sensor channel is characterised by an instance number (which
 identifies the sensor on the NMEA network) and a sampling interval
@@ -186,10 +183,17 @@ which sets the period between consecutive sensor reading and will
 broadly correspond to the rate at which the sensor reading is
 broadcast onto the NMEA bus.
 
-The instance number of all channels defaults to 0xFF and, consequently,
-all channels are disabled.
-You can configure instance numbers for all sensor channels as a block,
-or set the instance number of each channel individually.
+The instance number of all channels defaults to 0xFF which value
+disables the channel.
+You can configure instance numbers for all sensor channels (and so
+enable all channels) as a block using an extended mode function, or
+you can set the instance number of each channel individually using
+the normal mode configuration dialogue which will allow you to
+similarly set all of the other sensor channel properties. 
+
+Note that if you use the extended mode function to assign a block
+of instance numbers you will still need to set other sensor channel
+properties through normal mode configuration.
 
 The default sampling intervals are chosen in such a way that the
 broadcast characteristics of sensor readings will obey the requirements
@@ -203,15 +207,19 @@ at the end of this section.
 To configure the instance number of all six sensor channels to
 consecutive values from a specified start value:
 
-1. Enter the value 0x01 on the ADDR/VALUE DIL switch.
-2. Press and hold the PRG button for at least one second before release.
-   The module's transmit LED will begin to flash rapidly.
-3. Enter the instance number you wish to use for sensor channel one on
+1. Ensure that the module is in extended operating mode by checking
+   that the transmit LED is steadily on.
+   If not, switch the module into extended mode as described above.
+2. Enter the BASSINST function code (0xE0) into the ADDR/VALUE DIL
+   switch.
+3. Press and hold the PRG button for 1s before releasing.
+   The transmit LED will flash continuously.
+4. Enter the instance number you wish to use for sensor channel one on
    the ADDR/VALUE DIL switch.
-4. Press and release the PRG button.
-   The module's transmit LED will stop flashing.
+5. Press and release the PRG button.
+   The transmit LED will revert to being steadily on.
 
-The instance number you specify at (3) must be in the range 0..247 and
+The instance number you specify at (2) must be in the range 0..247 and
 none of the values in the range *n*..(*n* + 5) may be in use as the
 instance number of any existing or planned temperature sensor on the
 host NMEA bus.
@@ -511,4 +519,65 @@ conductors of heat so it is good to keep the volume of these low.
 Thermally conductive silicone-sealant and potting compounds perform
 better, but are expensive.
 
+## Appendix I - Module configuration table
+
+The module configuration tabel is a 31-byte array with the following
+structure.
+
+| Address | Name                       | Default value | Description |
+| :---:   | :---                       | :---:         | :--- |
+| 0x00    | CAN SOURCE ADDRESS         | 0x22          | RESERVED |
+| 0x01    | SENSOR 1 INSTANCE NUMBER   | 0xFF          | Instance number for sensor one. |
+| 0x02    | SENSOR 1 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor one. |
+| 0x03    | SENSOR 1 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x04    | SENSOR 1 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x05    | SENSOR 1 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x06    | SENSOR 2 INSTANCE NUMBER   | 0xFF          | Instance number for sensor two. |
+| 0x07    | SENSOR 2 SAMPLING INTERVAL | 0x03          | Sampling interval in seconds for sensor two. |
+| 0x08    | SENSOR 2 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x09    | SENSOR 2 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x0A    | SENSOR 2 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x0B    | SENSOR 3 INSTANCE NUMBER   | 0xFF          | Instance number for sensor three. |
+| 0x0C    | SENSOR 3 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor three. |
+| 0x0D    | SENSOR 3 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x0E    | SENSOR 3 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x0F    | SENSOR 3 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x10    | SENSOR 4 INSTANCE NUMBER   | 0xFF          | Instance number for sensor four. |
+| 0x11    | SENSOR 4 SAMPLING INTERVAL | 0x07          | Sampling interval in seconds for sensor four. |
+| 0x12    | SENSOR 4 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x13    | SENSOR 4 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x14    | SENSOR 4 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x15    | SENSOR 5 INSTANCE NUMBER   | 0xFF          | Instance number for sensor five. |
+| 0x16    | SENSOR 5 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor five. |
+| 0x17    | SENSOR 5 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x18    | SENSOR 5 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x19    | SENSOR 5 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+| 0x1A    | SENSOR 6 INSTANCE NUMBER   | 0xFF          | Instance number for sensor six. |
+| 0x1B    | SENSOR 6 SAMPLING INTERVAL | 0x0D          | Sampling interval in seconds for sensor six. |
+| 0x1C    | SENSOR 6 NMEA TEMP SOURCE  | 0x02          | NMEA temperature source code. |
+| 0x1D    | SENSOR 6 SET POINT TEMP HI | 0xFF          | NMEA set point temperature high-byte. |
+| 0x1E    | SENSOR 6 SET POINT TEMP LO | 0xFF          | NMEA set point temperature low-byte. |
+
+## Appendix II - Module function table
+
+| Address | Value   | Function |
+| :---:   | :---    | :--- |
+| 0x01    | Any     | Detect and assign sensor hardware address to sensor 1 |
+| 0x02    | Any     | Detect and assign sensor hardware address to sensor 2 |
+| 0x03    | Any     | Detect and assign sensor hardware address to sensor 3 |
+| 0x04    | Any     | Detect and assign sensor hardware address to sensor 4 |
+| 0x05    | Any     | Detect and assign sensor hardware address to sensor 5 |
+| 0x06    | Any     | Detect and assign sensor hardware address to sensor 6 |
+| 0x10    | Any     | De-assign sensor hardware address from sensor 1       |
+| 0x20    | Any     | De-assign sensor hardware address from sensor 2       |
+| 0x30    | Any     | De-assign sensor hardware address from sensor 3       |
+| 0x40    | Any     | De-assign sensor hardware address from sensor 4       |
+| 0x50    | Any     | De-assign sensor hardware address from sensor 5       |
+| 0x60    | Any     | De-assign sensor hardware address from sensor 6       |
+| 0xE0    | *start* | Assign a sequential block of instance adresses to sensors 1 through 6, beginning at address *start* | 
 
