@@ -563,19 +563,9 @@ structure.
 
 ## Appendix II - Module function table
 
-| Address | Value   | Function |
-| :---:   | :---    | :--- |
-| 0x01    | Any     | Detect and assign sensor hardware address to sensor 1 |
-| 0x02    | Any     | Detect and assign sensor hardware address to sensor 2 |
-| 0x03    | Any     | Detect and assign sensor hardware address to sensor 3 |
-| 0x04    | Any     | Detect and assign sensor hardware address to sensor 4 |
-| 0x05    | Any     | Detect and assign sensor hardware address to sensor 5 |
-| 0x06    | Any     | Detect and assign sensor hardware address to sensor 6 |
-| 0x10    | Any     | De-assign sensor hardware address from sensor 1       |
-| 0x20    | Any     | De-assign sensor hardware address from sensor 2       |
-| 0x30    | Any     | De-assign sensor hardware address from sensor 3       |
-| 0x40    | Any     | De-assign sensor hardware address from sensor 4       |
-| 0x50    | Any     | De-assign sensor hardware address from sensor 5       |
-| 0x60    | Any     | De-assign sensor hardware address from sensor 6       |
-| 0xE0    | *start* | Assign a sequential block of instance adresses to sensors 1 through 6, beginning at address *start* | 
+| Address | Value    | Function |
+| :---:   | :---     | :--- |
+| 0x01    | *sensor* | Detect and assign sensor hardware address to *sensor* |
+| 0x02    | *sensor* | Remove sensor hardware address from *sensor* |
+| 0xE0    | *start*  | Assign a sequential block of instance adresses to sensors 1 through 6, beginning at address *start* | 
 
