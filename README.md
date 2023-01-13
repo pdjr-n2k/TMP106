@@ -80,7 +80,7 @@ In normal operating mode the module configuration can be updated at any
 time by modifying the discrete byte-sized values which make up the
 persistent module configuration table
 (see
-[Appendix I - Module configuration table](#Appendix I - Module configuration table)
+[Appendix I - Module configuration table](#appendix-i---module-configuration-table)
 ).
 
 ### Extended operating mode
@@ -95,10 +95,10 @@ accepted and the module is awaiting entry of function argument.
 
 Sensor channel LEDs will flash continuously to indicate that a sensor
 hardware address has been registered for the associated channel and will
-remain stedily on if the registered is currently connected to the
-module.
+remain steadily on if the registered temperature sensor is connected to
+the module.
 
-See [Appendix II - Module function table](#Appendix II - Module function table))
+See [Appendix II - Module function table](#appendix-ii---module-function-table))
 for a description of the functions available in extended mode.
 
 ### Switching between normal and extended operating modes

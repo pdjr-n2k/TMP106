@@ -171,16 +171,6 @@ int extendedInteract(unsigned int value, bool longPress) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
 /**********************************************************************
  * This callback function is registered with the ProcessQueue instance
  * that queues temperature readings. The function is called regularly
