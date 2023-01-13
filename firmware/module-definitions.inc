@@ -104,57 +104,69 @@ bool configurationValidator(unsigned int index, unsigned char value) {
 
 /**********************************************************************
  * Override of the NOP100 extendedInteract() function.
+ *
+ * Manage operation of the PRG button whilst the application is in
+ * interact mode.
  */
 #define EXTENDED_INTERACT
 
 int extendedInteract(unsigned int value, bool longPress) {
-  static unsigned int functionCode;
+  static unsigned int functionCode = -1;
   static unsigned long deadline = 0;
   unsigned char deviceAddress[8];
-  int retval;
+  int retval = 0;
 
-  switch (longPress) {
-    case true:
-      functionCode = value;
-      retval = 1;
-      break;
-    case false:
-      switch (functionCode) {
-        case 0x01: // Detect sensor and assign to channel 1
-        case 0x02:
-        case 0x03:
-        case 0x04:
-        case 0x05:
-        case 0x06:
-          if (getNewAddressFromBus(deviceAddress)) {
-            DEVICE_ADDRESSES.setAddress((functionCode - 1), deviceAddress);
-            DEVICE_ADDRESSES.save();
-          }
-          break;
-        case 0x10: // De-assign sensor on channel 1
-        case 0x20:
-        case 0x30:
-        case 0x40:
-        case 0x50:
-        case 0x60:
-          DEVICE_ADDRESSES.clearAddress(value >> 4);
-          DEVICE_ADDRESSES.save();
-          break;
-        case 0xff: // Set instance address block
-          if (value < 247) {
-            for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-              MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET), value++);
+  if (value == 0xffff) {
+    if ((deadline) && (millis() > deadline)) {
+      functionCode = -1;
+      deadline = 0UL;
+      retval = 10;
+    }
+  } else {
+    switch (longPress) {
+      case true:
+        switch (value) {
+          case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
+          case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
+          case 0xff:
+            retval = 1;
+            break;
+          default:
+            retval = -1;
+        }
+        break;
+      case false:
+        switch (functionCode) {
+          case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
+            if (getNewAddressFromBus(deviceAddress)) {
+              DEVICE_ADDRESSES.setAddress((functionCode - 1), deviceAddress);
+              DEVICE_ADDRESSES.save();
+              retval = 2;
+            } else {
+              retval = -2;
             }
+            break;
+          case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
+            DEVICE_ADDRESSES.clearAddress(value >> 4);
+            DEVICE_ADDRESSES.save();
             retval = 2;
-          } else {
-            retval = -2;
-          }
-          break;
-        default:
-          retval = -2;
-          break;
-      }    
-      break;
+            break;
+          case 0xff: // Set instance address block
+            if (value < 247) {
+              for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
+                MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET), value++);
+              }
+              retval = 2;
+            } else {
+              retval = -2;
+            }
+            break;
+          default:
+            break;
+        }
+        functionCode = -1;    
+        break;
+    }
   }
 }
 
