@@ -1,8 +1,9 @@
 # TMP106 - NMEA 2000 temperature sensor module
 
-**TMP106** is a specialisation of
-[NOP100](https://www.github.com/preeve9534/NOP100)
-which implements a six channel temperature sensor module.
+**TMP106** is a temperature sensor module which supports the
+connection of up to six
+[Maxim DS18B20](https://www.hobbytronics.co.uk/datasheets/DS18B20.pdf)
+temperature sensors.
 
 The module presents on the NMEA bus as a device with Class Code 75
 (Sensor Communication Interface) and Function Code 130 (Temperature)
