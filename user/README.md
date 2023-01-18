@@ -1,5 +1,4 @@
-# TMP106 - NMEA 2000 temperature sensor module\
-User manual
+# TMP106 - NMEA 2000 temperature sensor module
 
 **TMP106** is a specialisation of
 [NOP100](https://www.github.com/preeve9534/NOP100)
