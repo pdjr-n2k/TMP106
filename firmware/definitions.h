@@ -22,7 +22,7 @@ DallasTemperature sensors(&oneWire);
  * Object for storing and persisting a collection of OneWire bus
  * hardware addresses (retrieved from temperature sensors).
  */
-OneWireAddressTable DEVICE_ADDRESSES(SENSOR_CHANNEL_COUNT, DEVICE_ADDRESSES_EEPROM_ADDRESS);
+OneWireAddressTable DEVICE_ADDRESSES(NUMBER_OF_SUPPORTED_SENSORS, DEVICE_ADDRESSES_EEPROM_ADDRESS);
 
 /**********************************************************************
  * Create a ProcessQueue instance for buffering and processing
@@ -48,20 +48,20 @@ ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_R
 #define CONFIGURATION_INITIALISER
 
 int configurationIndex(int sensor, int offset) {
-  return(CONFIGURATION_OFFSET_TO_FIRST_SENSOR_BLOCK + ((sensor * CONFIGURATION_SENSOR_BLOCK_SIZE) + offset));
+  return(CM_OFFSET_TO_FIRST_SENSOR_BLOCK + ((sensor * CM_SENSOR_BLOCK_SIZE) + offset));
 }
 
 unsigned char* configurationInitialiser(int& size, unsigned int eepromAddress) {
-  static unsigned char *buffer = new unsigned char[size = CONFIGURATION_SIZE];
+  static unsigned char *buffer = new unsigned char[size = CM_SIZE];
   EEPROM.get(eepromAddress, buffer);
-  if (buffer[CAN_SOURCE_INDEX] == 0xff) {
-    buffer[CAN_SOURCE_INDEX] = CAN_SOURCE_DEFAULT_VALUE;
-    for (int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET)] = 0xff;
-      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET)] = (sensor < 2)?0x03:((sensor < 4)?0x07:0x0d);
-      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET)] = 0x02;
-      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SET_POINT_HI_BYTE_OFFSET)] = 0xff;
-      buffer[configurationIndex(sensor, CONFIGURATION_SENSOR_SET_POINT_LO_BYTE_OFFSET)] = 0xff;
+  if (buffer[CM_CAN_SOURCE_INDEX] == 0xff) {
+    buffer[CM_CAN_SOURCE_INDEX] = CM_CAN_SOURCE_DEFAULT;
+    for (int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
+      buffer[configurationIndex(sensor, CM_SENSOR_INSTANCE_OFFSET)] = CM_INSTANCE_DEFAULT;
+      buffer[configurationIndex(sensor, CM_SENSOR_SAMPLE_INTERVAL_OFFSET)] = (sensor < 2)?0x03:((sensor < 4)?0x07:0x0d);
+      buffer[configurationIndex(sensor, CM_SENSOR_TEMPERATURE_SOURCE_OFFSET)] = CM_TEMPERATURE_SOURCE_DEFAULT;
+      buffer[configurationIndex(sensor, CM_SENSOR_SET_POINT_HI_BYTE_OFFSET)] = CM_SET_POINT_HI_BYTE_DEFAULT;
+      buffer[configurationIndex(sensor, CM_SENSOR_SET_POINT_LO_BYTE_OFFSET)] = CM_SET_POINT_LO_BYTE_DEFAULT;
     }
     EEPROM.put(eepromAddress, buffer);
   }
@@ -153,8 +153,8 @@ int extendedInteract(unsigned int value, bool longPress) {
             break;
           case 0xff: // Set instance address block
             if (value < 247) {
-              for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
-                MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET), value++);
+              for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
+                MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CM_SENSOR_INSTANCE_OFFSET), value++);
               }
               retval = 2;
             } else {
@@ -168,6 +168,7 @@ int extendedInteract(unsigned int value, bool longPress) {
         break;
     }
   }
+  return(retval);
 }
 
 
@@ -184,10 +185,10 @@ void transmitPGN130316(TemperatureReading temperatureReading) {
   SetN2kPGN130316(
     message,
     temperatureReading.sid, 
-    MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CONFIGURATION_SENSOR_INSTANCE_OFFSET)),
-    (tN2kTempSource) MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CONFIGURATION_SENSOR_TEMPERATURE_SOURCE_OFFSET)),
+    MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_INSTANCE_OFFSET)),
+    (tN2kTempSource) MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_TEMPERATURE_SOURCE_OFFSET)),
     (double) temperatureReading.temperature,
-    (double) ((MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CONFIGURATION_SENSOR_SET_POINT_HI_BYTE_OFFSET)) * 255) + MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CONFIGURATION_SENSOR_SET_POINT_LO_BYTE_OFFSET)))
+    (double) ((MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_SET_POINT_HI_BYTE_OFFSET)) * 255) + MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_SET_POINT_LO_BYTE_OFFSET)))
   );
   NMEA2000.SendMsg(message);
   TRANSMIT_LED.setLedState(0, StatusLeds::once);
@@ -206,7 +207,7 @@ void transmitPGN130316(TemperatureReading temperatureReading) {
  */
 void sampleSensorMaybe() {
   static unsigned long deadline = 0UL;
-  static unsigned long deadlines[SENSOR_CHANNEL_COUNT] = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
+  static unsigned long deadlines[NUMBER_OF_SUPPORTED_SENSORS] = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
   static unsigned char sid = 0;
   unsigned long now = millis();
   TemperatureReading temperatureReading;
@@ -214,7 +215,7 @@ void sampleSensorMaybe() {
   if (now > deadline) {
     sensors.requestTemperatures();
     sid++;
-    for (unsigned int sensor = 0; sensor < SENSOR_CHANNEL_COUNT; sensor++) {
+    for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
       unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
       if ((address) && (now > deadlines[sensor])) {
         STATUS_LEDS.setLedState(sensor, StatusLeds::once);
@@ -222,10 +223,10 @@ void sampleSensorMaybe() {
         temperatureReading.sid = sid;
         temperatureReading.temperature = (sensors.getTempC(address) + 273.0);
         TEMPERATURE_READING_PROCESS_QUEUE.enqueue(temperatureReading);
-        deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte(configurationIndex(sensor, CONFIGURATION_SENSOR_SAMPLE_INTERVAL_OFFSET))));
+        deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte(configurationIndex(sensor, CM_SENSOR_SAMPLE_INTERVAL_OFFSET))));
       }
     }
-    deadline = (now + TEMPERATURE_READING_SAMPLE_INTERVAL);
+    deadline = (now + TEMPERATURE_SENSOR_REFRESH_INTERVAL);
   }
 }
 
