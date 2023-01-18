@@ -2,7 +2,8 @@
 
 This project provides a 
 [hardware design](./hardware/)
-and [firmware](./firmware/)
+and associated
+[firmware](./firmware/)
 for an NMEA 2000 six channel temperature sensor module.
 
 There is also a
