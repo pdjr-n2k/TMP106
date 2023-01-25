@@ -11,10 +11,8 @@
  * Sample the sensors and perhaps queue temperature reports for future
  * output.
  */
-sampleSensorMaybe();
+sampleSensorsMaybe();
 
-/**********************************************************************
- * Process the transmit queue transmitting PGN 130316 messages for any
- * queued temperature readings.
- */
-TEMPERATURE_READING_PROCESS_QUEUE.process();
+for (unsigned int i = 0; i < NUMBER_OF_SUPPORTED_SENSORS; i++) {
+  if (PGN130316Schedulers[i].IsTime()) { PGN130316Schedulers[i].UpdateNextTime(); transmitPGN130316(i); }
+}

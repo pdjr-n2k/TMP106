@@ -2,11 +2,32 @@
  * module-definitions.inc
  */
 
+/**
+ * @brief Create a scheduler instance for transmission of PGN 127501.
+ */
+tN2kSyncScheduler PGN130316Schedulers[] = {
+  tN2kSyncScheduler(false),
+  tN2kSyncScheduler(false),
+  tN2kSyncScheduler(false),
+  tN2kSyncScheduler(false),
+  tN2kSyncScheduler(false),
+  tN2kSyncScheduler(false),
+};
+
+struct TemperatureReading { float temperature; unsigned char sid; };
+TemperatureReading  TEMPERATURE_READINGS[6] = {
+  { 0.0, 0 },
+  { 0.0, 0 },
+  { 0.0, 0 },
+  { 0.0, 0 },
+  { 0.0, 0 },
+  { 0.0, 0 }
+}
+
 /**********************************************************************
  * Type declarations and function prototypes.
  */
-struct TemperatureReading { unsigned int sensor; unsigned char sid; float temperature; };
-void transmitPGN130316(TemperatureReading temperatureReading);
+void transmitPGN130316();
 bool getNewAddressFromBus(unsigned char *address);
 
 /**********************************************************************
@@ -42,30 +63,91 @@ OneWireAddressTable DEVICE_ADDRESSES(NUMBER_OF_SUPPORTED_SENSORS, DEVICE_ADDRESS
  */
 ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_READING_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
 
-/**********************************************************************
- * Override of the NOP100 configurationInitialiser() function.
- */
-#define CONFIGURATION_INITIALISER
 
-int configurationIndex(int sensor, int offset) {
-  return(CM_OFFSET_TO_FIRST_SENSOR_BLOCK + ((sensor * CM_SENSOR_BLOCK_SIZE) + offset));
+
+/**
+ * @brief Callback with actions to perform on CAN address claim.
+ * 
+ * Set the period and offset for transmission of PGN 127501 from module
+ * configuration data. The SetPeriodAndOffset() function alos starts the
+ * scheduler.
+ */
+void onN2kOpen() {
+  for (unsigned int i = 0; i < NUMBER_OF_SUPPORTED_SENSORS; i++) {
+    PGN130316Schedulers[i].SetPeriodAndOffset(
+      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(i, MODULE_CONFIGURATION_PGN130316_TRANSMIT_PERIOD_OFFSET) * 1000)),
+      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(i, MODULE_CONFIGURATION_PGN130316_TRANSMIT_OFFSET_OFFSET) * 10))
+    );
+  }
 }
 
-unsigned char* configurationInitialiser(int& size, unsigned int eepromAddress) {
-  static unsigned char *buffer = new unsigned char[size = CM_SIZE];
-  EEPROM.get(eepromAddress, buffer);
-  if (buffer[CM_CAN_SOURCE_INDEX] == 0xff) {
-    buffer[CM_CAN_SOURCE_INDEX] = CM_CAN_SOURCE_DEFAULT;
-    for (int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
-      buffer[configurationIndex(sensor, CM_SENSOR_INSTANCE_OFFSET)] = CM_INSTANCE_DEFAULT;
-      buffer[configurationIndex(sensor, CM_SENSOR_SAMPLE_INTERVAL_OFFSET)] = (sensor < 2)?0x03:((sensor < 4)?0x07:0x0d);
-      buffer[configurationIndex(sensor, CM_SENSOR_TEMPERATURE_SOURCE_OFFSET)] = CM_TEMPERATURE_SOURCE_DEFAULT;
-      buffer[configurationIndex(sensor, CM_SENSOR_SET_POINT_HI_BYTE_OFFSET)] = CM_SET_POINT_HI_BYTE_DEFAULT;
-      buffer[configurationIndex(sensor, CM_SENSOR_SET_POINT_LO_BYTE_OFFSET)] = CM_SET_POINT_LO_BYTE_DEFAULT;
+/**
+ * @brief Scan the OneWire bus looking for an unused hardware address
+ * and, if found, assign it to the identified sensor. 
+ * 
+ * @param sensorIndex - the sensor to which a found address should be
+ *                      assigned.
+ * @return true       - an address was found and assigned.
+ * @return false      - no address found or other error.
+ */
+bool assignDeviceAddress(unsigned char unused, unsigned char sensorIndex) {
+  bool retval = false;
+  unsigned char deviceAddress[8];
+  
+  if (sensorIndex < NUMBER_OF_SUPPORTED_SENSORS) {
+    for (unsigned int i = 0; i < sensors.getDeviceCount; i++) {
+      if (sensors.getAddress(deviceAddress, i)) {
+        if (!DEVICE_ADDRESSES.contains(deviceAddress)) {
+          DEVICE_ADDRESSES.setAddress(sensorIndex, deviceAddress);
+          DEVICE_ADDRESSES.save();
+          retval = true;
+        }
+        break;
+      }
     }
-    EEPROM.put(eepromAddress, buffer);
   }
-  return(buffer);
+  return(retval);
+}
+
+/**
+ * @brief Delete any hardware address associated with a specified
+ * sensor.
+ * 
+ * @param sensorIndex - the sensor whose address should be deleted.
+ * @return true       - address deleted successfully.
+ * @return false      - address deletion failed (bad sensorIndex).
+ */
+bool deleteDeviceAddress(unsigned char unused, unsigned char sensorIndex) {
+  bool retval = false;
+
+  if (sensorIndex < NUMBER_OF_SUPPORTED_SENSORS) {
+    DEVICE_ADDRESSES.clearAddress(sensorIndex);
+    DEVICE_ADDRESSES.save();
+    retval = true;
+  }
+  return(retval);
+}
+
+/**
+ * @brief Assign a block of consecution instance addresses to sensors.
+ * 
+ * @param startValue - the first instance address in the block (must be
+ *                     in the range 0..247). 
+ * @return true      - the specified address was valid an all sensors
+ *                     have been updated.
+ * @return false     - the specified address was invalid and no sensors
+ *                     have been updated.
+ */
+bool assignAllInstanceAddresses(unsigned char unused, unsigned char startValue) {
+  bool retval = false;
+  
+  if (startValue < 247) {
+    for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
+      MODULE_CONFIGURATION.setByte(configurationIndex(sensor, MODULE_CONFIGURATION_INSTANCE_OFFSET), startValue++);
+    }
+    retval = true;
+  }
+  return(retval);
 }
 
 /**********************************************************************
@@ -75,102 +157,36 @@ unsigned char* configurationInitialiser(int& size, unsigned int eepromAddress) {
 
 bool configurationValidator(unsigned int index, unsigned char value) {
   bool retval = false;
-  if (OPERATING_MODE == normal) {
-    switch (index) {
-      case 0: // CAN source address
-        retval = true;
-        break;
-      case 1: case 6: case 11: case 16: case 21: case 26: // Sensor instance
-        retval = (value >= 2);
-        break;
-      case 2: case 7: case 12: case 17: case 22: case 27: // Sensor sample interval
-        retval = true;
-        break;
-      case 3: case 8: case 13: case 18: case 23: case 28: // NMEA temperature source code
-        retval = true;
-        break;
-      case 4: case 9: case 14: case 19: case 24: case 29: // Set point hi byte
-        retval = true;
-        break;
-      case 5: case 10: case 15: case 20: case 25: case 30: // Set point lo byte
-        retval = true;
-        break;
-      default:
-        break;
-    }
+  
+  switch (index) {
+    case 0: // CAN source address
+      retval = false;
+      break;
+    case 1: case 7: case 13: case 19: case 25: case 31: // Sensor instance
+      retval = (value >= 2);
+      break;
+    case 2: case 8: case 14: case 20: case 26: case 32: // NMEA temperature source
+      retval = (value < 16);
+      break;
+    case 3: case 9: case 15: case 21: case 27: case 33: // PGN130316 transmit period
+      retval = true;
+      break;
+    case 4: case 10: case 16: case 22: case 28: case 34: // PGN130316 transmit offset
+      retval = true;
+      break;
+    case 5: case 11: case 17: case 23: case 29: case 35: // Set point hi byte
+      retval = true;
+      break;
+    case 6: case 12: case 18: case 24: case 30: case 36: // Set point lo byte
+      retval = true;
+      break;
+    default:
+      break;
   }
   return(retval);
 }
 
-/**********************************************************************
- * Override of the NOP100 extendedInteract() function.
- *
- * Manage operation of the PRG button whilst the application is in
- * interact mode.
- */
-#define EXTENDED_INTERACT
-
-int extendedInteract(unsigned int value, bool longPress) {
-  static unsigned int functionCode = -1;
-  static unsigned long deadline = 0;
-  unsigned char deviceAddress[8];
-  int retval = 0;
-
-  if (value == 0xffff) {
-    if ((deadline) && (millis() > deadline)) {
-      functionCode = -1;
-      deadline = 0UL;
-      retval = 10;
-    }
-  } else {
-    switch (longPress) {
-      case true:
-        switch (value) {
-          case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
-          case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
-          case 0xff:
-            retval = 1;
-            break;
-          default:
-            retval = -1;
-        }
-        break;
-      case false:
-        switch (functionCode) {
-          case 0x01: case 0x02: case 0x03: case 0x04: case 0x05: case 0x06:
-            if (getNewAddressFromBus(deviceAddress)) {
-              DEVICE_ADDRESSES.setAddress((functionCode - 1), deviceAddress);
-              DEVICE_ADDRESSES.save();
-              retval = 2;
-            } else {
-              retval = -2;
-            }
-            break;
-          case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60:
-            DEVICE_ADDRESSES.clearAddress(value >> 4);
-            DEVICE_ADDRESSES.save();
-            retval = 2;
-            break;
-          case 0xff: // Set instance address block
-            if (value < 247) {
-              for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
-                MODULE_CONFIGURATION.setByte(configurationIndex(sensor, CM_SENSOR_INSTANCE_OFFSET), value++);
-              }
-              retval = 2;
-            } else {
-              retval = -2;
-            }
-            break;
-          default:
-            break;
-        }
-        functionCode = -1;    
-        break;
-    }
-  }
-  return(retval);
-}
-
+/
 
 /**********************************************************************
  * This callback function is registered with the ProcessQueue instance
@@ -180,18 +196,21 @@ int extendedInteract(unsigned int value, bool longPress) {
  * transmitting it onto the NMEA bus, flashing the transmit LED
  * appropriately.
  */
-void transmitPGN130316(TemperatureReading temperatureReading) {
+void transmitPGN130316(unsigned int sensorIndex) {
   tN2kMsg message;
-  SetN2kPGN130316(
-    message,
-    temperatureReading.sid, 
-    MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_INSTANCE_OFFSET)),
-    (tN2kTempSource) MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_TEMPERATURE_SOURCE_OFFSET)),
-    (double) temperatureReading.temperature,
-    (double) ((MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_SET_POINT_HI_BYTE_OFFSET)) * 255) + MODULE_CONFIGURATION.getByte(configurationIndex(temperatureReading.sensor, CM_SENSOR_SET_POINT_LO_BYTE_OFFSET)))
-  );
-  NMEA2000.SendMsg(message);
-  TRANSMIT_LED.setLedState(0, StatusLeds::once);
+  
+  if (TEMPERATURE_READINGS[sensorIndex] > 0) {
+    SetN2kPGN130316(
+      message,
+      TEMPERATURE_READINGS[sensorIndex].sid, 
+      MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_INSTANCE_OFFSET)),
+      (tN2kTempSource) MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SOURCE_OFFSET)),
+      (double) TEMPERATURE_READINGS[sensorIndex].temperature,
+      (double) ((MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_HI_BYTE_OFFSET)) * 255) + MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_LO_BYTE_OFFSET)))
+    );
+    NMEA2000.SendMsg(message);
+    TRANSMIT_LED.setLedState(0, StatusLeds::once);
+  }
 }
 
 /**********************************************************************
@@ -205,46 +224,20 @@ void transmitPGN130316(TemperatureReading temperatureReading) {
  * PGN130316 temperature report message created and placed on the
  * PGN transmit queue.
  */
-void sampleSensorMaybe() {
+void sampleSensorsMaybe() {
   static unsigned long deadline = 0UL;
-  static unsigned long deadlines[NUMBER_OF_SUPPORTED_SENSORS] = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
   static unsigned char sid = 0;
   unsigned long now = millis();
-  TemperatureReading temperatureReading;
 
   if (now > deadline) {
-    sensors.requestTemperatures();
-    sid++;
     for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
-      unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor + 1);
-      if ((address) && (now > deadlines[sensor])) {
-        STATUS_LEDS.setLedState(sensor, StatusLeds::once);
-        temperatureReading.sensor = sensor;
-        temperatureReading.sid = sid;
-        temperatureReading.temperature = (sensors.getTempC(address) + 273.0);
-        TEMPERATURE_READING_PROCESS_QUEUE.enqueue(temperatureReading);
-        deadlines[sensor] = (now + (1000UL * MODULE_CONFIGURATION.getByte(configurationIndex(sensor, CM_SENSOR_SAMPLE_INTERVAL_OFFSET))));
-      }
+      unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor);
+      TEMPERATURE_READINGS[sensor].sid = (address)?sid:0;
+      TEMPERATURE_READINGS[sensor].temperature = (address)?(sensors.getTempC(address) + 273.0):0.0;
+      if (address) STATUS_LEDS.setLedState(sensor, StatusLeds::once);
     }
+    sid++;
+    sensors.requestTemperatures();
     deadline = (now + TEMPERATURE_SENSOR_REFRESH_INTERVAL);
   }
 }
-
-/**********************************************************************
- * getNewAddressFromBus reads the addresses of devices on the OneWire
- * bus looking for an address that does not exist in the
- * DEVICE_ADDRESSES array. If such an address is found then true is
- * returned and the discovered address is written to <address> else
- * the function returns false and address is unmodified.
- */
-bool getNewAddressFromBus(unsigned char *address) {
-  unsigned char deviceCount = sensors.getDeviceCount();
-  
-  for (int i = 0; i < deviceCount; i++) {
-    if (sensors.getAddress(address, i)) {
-      if (!DEVICE_ADDRESSES.contains(address)) return(true);
-    }
-  }
-  return(false);
-}
-
