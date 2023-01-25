@@ -22,13 +22,8 @@ TemperatureReading  TEMPERATURE_READINGS[6] = {
   { 0.0, 0 },
   { 0.0, 0 },
   { 0.0, 0 }
-}
+};
 
-/**********************************************************************
- * Type declarations and function prototypes.
- */
-void transmitPGN130316();
-bool getNewAddressFromBus(unsigned char *address);
 
 /**********************************************************************
  * Create a OneWire bus instance on the designated GPIO pin and pass
@@ -45,25 +40,9 @@ DallasTemperature sensors(&oneWire);
  */
 OneWireAddressTable DEVICE_ADDRESSES(NUMBER_OF_SUPPORTED_SENSORS, DEVICE_ADDRESSES_EEPROM_ADDRESS);
 
-/**********************************************************************
- * Create a ProcessQueue instance for buffering and processing
- * temperature sensor readings: sensor readings are taken at the rates
- * specified in the module configurtion and placed into the queue;
- * readings are removed from the queue and processed for immediate
- * transmission on the NMEA bus.
- * 
- * TEMPERATURE_READING_QUEUE_LENGTH specifies the number of readings
- * that can be buffered;
- * PGN130316_MAX_TRANSMIT_INTERVAL specifies the processing interval
- * and since processing equates to transmission of a PGN 130316 message
- * we set this to that PGNs maximum rate as defined in the NMEA 2000
- * specification.
- * transmitPGN230326 is the queue processing callback function which
- * arranges output of temperatue readings onto the NMEA bus.
- */
-ProcessQueue<TemperatureReading> TEMPERATURE_READING_PROCESS_QUEUE(TEMPERATURE_READING_QUEUE_LENGTH, PGN130316_MAX_TRANSMIT_INTERVAL, transmitPGN130316);
-
-
+unsigned int configurationIndex(unsigned int sensor, unsigned int offset) {
+  return(MODULE_CONFIGURATION_OFFSET_TO_FIRST_SENSOR_BLOCK + (sensor * MODULE_CONFIGURATION_SENSOR_BLOCK_SIZE) + offset);
+}
 
 /**
  * @brief Callback with actions to perform on CAN address claim.
@@ -95,7 +74,7 @@ bool assignDeviceAddress(unsigned char unused, unsigned char sensorIndex) {
   unsigned char deviceAddress[8];
   
   if (sensorIndex < NUMBER_OF_SUPPORTED_SENSORS) {
-    for (unsigned int i = 0; i < sensors.getDeviceCount; i++) {
+    for (unsigned int i = 0; i < sensors.getDeviceCount(); i++) {
       if (sensors.getAddress(deviceAddress, i)) {
         if (!DEVICE_ADDRESSES.contains(deviceAddress)) {
           DEVICE_ADDRESSES.setAddress(sensorIndex, deviceAddress);
@@ -153,7 +132,6 @@ bool assignAllInstanceAddresses(unsigned char unused, unsigned char startValue) 
 /**********************************************************************
  * Override of the NOP100 configurationValidator() function.
  */
-#define CONFIGURATION_VALIDATOR
 
 bool configurationValidator(unsigned int index, unsigned char value) {
   bool retval = false;
@@ -186,8 +164,6 @@ bool configurationValidator(unsigned int index, unsigned char value) {
   return(retval);
 }
 
-/
-
 /**********************************************************************
  * This callback function is registered with the ProcessQueue instance
  * that queues temperature readings. The function is called regularly
@@ -199,7 +175,7 @@ bool configurationValidator(unsigned int index, unsigned char value) {
 void transmitPGN130316(unsigned int sensorIndex) {
   tN2kMsg message;
   
-  if (TEMPERATURE_READINGS[sensorIndex] > 0) {
+  if (TEMPERATURE_READINGS[sensorIndex].temperature > 0) {
     SetN2kPGN130316(
       message,
       TEMPERATURE_READINGS[sensorIndex].sid, 
@@ -209,7 +185,7 @@ void transmitPGN130316(unsigned int sensorIndex) {
       (double) ((MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_HI_BYTE_OFFSET)) * 255) + MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_LO_BYTE_OFFSET)))
     );
     NMEA2000.SendMsg(message);
-    TRANSMIT_LED.setLedState(0, StatusLeds::once);
+    TRANSMIT_LED.setLedState(0, LedManager::once);
   }
 }
 
@@ -234,7 +210,7 @@ void sampleSensorsMaybe() {
       unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor);
       TEMPERATURE_READINGS[sensor].sid = (address)?sid:0;
       TEMPERATURE_READINGS[sensor].temperature = (address)?(sensors.getTempC(address) + 273.0):0.0;
-      if (address) STATUS_LEDS.setLedState(sensor, StatusLeds::once);
+      if (address) STATUS_LEDS.setLedState(sensor, LedManager::once);
     }
     sid++;
     sensors.requestTemperatures();
