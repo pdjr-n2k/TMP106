@@ -1,9 +1,10 @@
-/**********************************************************************
- * module-definitions.inc
+/**
+ * @file defines.h
  */
 
 /**
- * @brief Create a scheduler instance for transmission of PGN 127501.
+ * @brief Create scheduler instances for the transmission of six
+ * independent PGN130316 temperature reports.
  */
 tN2kSyncScheduler PGN130316Schedulers[] = {
   tN2kSyncScheduler(false),
@@ -14,6 +15,10 @@ tN2kSyncScheduler PGN130316Schedulers[] = {
   tN2kSyncScheduler(false),
 };
 
+/**
+ * @brief Create a structure for holding temperature readings from each
+ * sensor prior to transmission.
+ */
 struct TemperatureReading { float temperature; unsigned char sid; };
 TemperatureReading  TEMPERATURE_READINGS[6] = {
   { 0.0, 0 },
@@ -24,22 +29,32 @@ TemperatureReading  TEMPERATURE_READINGS[6] = {
   { 0.0, 0 }
 };
 
+/**
+ * @brief Create a persistent OneWireAddressTable for holding the
+ * hardware addresses of connected aensors.
+ */
+OneWireAddressTable DEVICE_ADDRESSES(NUMBER_OF_SUPPORTED_SENSORS, DEVICE_ADDRESSES_EEPROM_ADDRESS);
 
-/**********************************************************************
- * Create a OneWire bus instance on the designated GPIO pin and pass
- * then create a DallasTemperature instance for operating DS18B20
+
+/**
+ * @brief Create a OneWire bus instance on the designated GPIO pin and
+ * pass this to a DallasTemperature instance which will operate DS18B20
  * devices on the bus.
  */
 OneWire oneWire(GPIO_ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-
-/**********************************************************************
- * Object for storing and persisting a collection of OneWire bus
- * hardware addresses (retrieved from temperature sensors).
+/**
+ * @brief Return an index into the ModuleConfiguration buffer for a
+ * particular byte in a sensor configuration block.
+ * 
+ * @param sensor - index of the sensor configuration block to be
+ * accessed.
+ * @param offset - offset of the required configuration byte in the
+ * selected sensor configuration block.
+ * @return unsigned int - the computed index of the specified byte
+ * in the ModuleConfiguration.
  */
-OneWireAddressTable DEVICE_ADDRESSES(NUMBER_OF_SUPPORTED_SENSORS, DEVICE_ADDRESSES_EEPROM_ADDRESS);
-
 unsigned int configurationIndex(unsigned int sensor, unsigned int offset) {
   return(MODULE_CONFIGURATION_OFFSET_TO_FIRST_SENSOR_BLOCK + (sensor * MODULE_CONFIGURATION_SENSOR_BLOCK_SIZE) + offset);
 }
@@ -47,22 +62,23 @@ unsigned int configurationIndex(unsigned int sensor, unsigned int offset) {
 /**
  * @brief Callback with actions to perform on CAN address claim.
  * 
- * Set the period and offset for transmission of PGN 127501 from module
- * configuration data. The SetPeriodAndOffset() function alos starts the
- * scheduler.
+ * Configure each transmission scheduler from the period and offset
+ * values stored in the ModuleConfiguration and start scheduling.
  */
 void onN2kOpen() {
-  for (unsigned int i = 0; i < NUMBER_OF_SUPPORTED_SENSORS; i++) {
-    PGN130316Schedulers[i].SetPeriodAndOffset(
-      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(i, MODULE_CONFIGURATION_PGN130316_TRANSMIT_PERIOD_OFFSET) * 1000)),
-      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(i, MODULE_CONFIGURATION_PGN130316_TRANSMIT_OFFSET_OFFSET) * 10))
+  for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
+    PGN130316Schedulers[sensor].SetPeriodAndOffset(
+      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(sensor, MODULE_CONFIGURATION_PGN130316_TRANSMIT_PERIOD_OFFSET) * 1000)),
+      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(sensor, MODULE_CONFIGURATION_PGN130316_TRANSMIT_OFFSET_OFFSET) * 10))
     );
   }
 }
 
 /**
  * @brief Scan the OneWire bus looking for an unused hardware address
- * and, if found, assign it to the identified sensor. 
+ * and, if found, assign it to the identified sensor.
+ * 
+ * This callback is used by the module FunctionHandler.
  * 
  * @param sensorIndex - the sensor to which a found address should be
  *                      assigned.
@@ -92,6 +108,8 @@ bool assignDeviceAddress(unsigned char unused, unsigned char sensorIndex) {
  * @brief Delete any hardware address associated with a specified
  * sensor.
  * 
+ * This callback is used by the module FunctionHandler.
+ *
  * @param sensorIndex - the sensor whose address should be deleted.
  * @return true       - address deleted successfully.
  * @return false      - address deletion failed (bad sensorIndex).
@@ -109,6 +127,8 @@ bool deleteDeviceAddress(unsigned char unused, unsigned char sensorIndex) {
 
 /**
  * @brief Assign a block of consecution instance addresses to sensors.
+ * 
+ * This callback is used by the module FunctionHandler.
  * 
  * @param startValue - the first instance address in the block (must be
  *                     in the range 0..247). 
@@ -129,10 +149,16 @@ bool assignAllInstanceAddresses(unsigned char unused, unsigned char startValue) 
   return(retval);
 }
 
-/**********************************************************************
- * Override of the NOP100 configurationValidator() function.
+/**
+ * @brief Configuration validator for TMP106.
+ * 
+ * Overrides the default NOP100 validator function.
+ * 
+ * @param index - the configuration index to be v
+ * @param value 
+ * @return true 
+ * @return false 
  */
-
 bool configurationValidator(unsigned int index, unsigned char value) {
   bool retval = false;
   
@@ -164,13 +190,14 @@ bool configurationValidator(unsigned int index, unsigned char value) {
   return(retval);
 }
 
-/**********************************************************************
- * This callback function is registered with the ProcessQueue instance
- * that queues temperature readings. The function is called regularly
- * by the queue process() function and works to translate a passed
- * temperature reading into a PGN 130316 message before promptly
- * transmitting it onto the NMEA bus, flashing the transmit LED
- * appropriately.
+/**
+ * @brief Transmit a PGN130316 message for a specified sensor.
+ * 
+ * If a valid reading is available for the sensor selected by
+ * sensorIndex then compose a PGN 130316 message and send it onto the
+ * NMEA bus. Flash the module transmit LED to confirm.
+ * 
+ * @param sensorIndex - the sensor whose data should be transmitted.
  */
 void transmitPGN130316(unsigned int sensorIndex) {
   tN2kMsg message;
@@ -189,16 +216,13 @@ void transmitPGN130316(unsigned int sensorIndex) {
   }
 }
 
-/**********************************************************************
- * sampleSensorsMaybe should be called from loop().
- *
- * Every SENSOR_SAMPLE_INTERVAL it will broadcast a temperature request
- * on the OneWire bus asking all sensors to update their data.
- *
- * Each available sensor is then checked to see if it has reached its
- * sample interval and if so the sensor temperature is read and a
- * PGN130316 temperature report message created and placed on the
- * PGN transmit queue.
+/**
+ * @brief Take and buffer readings for each temperature sensor.
+ * 
+ * sampleSensorsMaybe should be called from loop() and at every
+ * SENSOR_SAMPLE_INTERVAL it will read the most recent temperature
+ * acquired by each sensor, buffer it for subsequent transmission and
+ * finally request every sensor to prepare a new reading.
  */
 void sampleSensorsMaybe() {
   static unsigned long deadline = 0UL;

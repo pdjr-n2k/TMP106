@@ -98,7 +98,7 @@
   MODULE_CONFIGURATION_SET_POINT_LO_BYTE_DEFAULT\
 }
 
-#define FUNCTION_MAPPER_SIZE 10
+#define FUNCTION_MAPPER_SIZE 4
 #define FUNCTION_MAPPER_CODE_FOR_ASSIGN_SENSOR_DEVICE_ADDRESS 0x01
 #define FUNCTION_MAPPER_CODE_FOR_DELETE_SENSOR_DEVICE_ADDRESS 0x02
 #define FUNCTION_MAPPER_CODE_FOR_ASSIGN_ALL_INSTANCE_ADDRESSES 0x40
@@ -107,11 +107,6 @@
  * @brief OneWireAddressTable is persisted at this EEPROM location.
  */
 #define DEVICE_ADDRESSES_EEPROM_ADDRESS 100
-
-/**
- * @brief Queue for buffering temperature readings awaiting transmission.
- */
-#define TEMPERATURE_READING_QUEUE_LENGTH 20
 
 /**
  * @brief Interval at which to read temperature sensors. 
@@ -123,14 +118,7 @@
 #define TEMPERATURE_SENSOR_REFRESH_INTERVAL 1000
 
 /**
- * @brief The frequency at which to poll the message transmission
- *        queue. 
- * 
- * This corresponds to the maximum transmission rate supported by the
- * module. The NMEA2000 specification sets this at 500ms for PGN
- * 130316.
+ * @brief We override these functions in NOP100. 
  */
-#define PGN130316_MAX_TRANSMIT_INTERVAL 500UL
-
 #define ON_N2K_OPEN
 #define CONFIGURATION_VALIDATOR
