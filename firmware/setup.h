@@ -7,14 +7,14 @@
  * For the NOP100 module this file is intentionally empty.
  */
 
-FUNCTION_MAPPER.addHandler(FUNCTION_MAPPER_CODE_FOR_ASSIGN_SENSOR_DEVICE_ADDRESS, assignDeviceAddress);
-FUNCTION_MAPPER.addHandler(FUNCTION_MAPPER_CODE_FOR_DELETE_SENSOR_DEVICE_ADDRESS, deleteDeviceAddress);
-FUNCTION_MAPPER.addHandler(FUNCTION_MAPPER_CODE_FOR_ASSIGN_ALL_INSTANCE_ADDRESSES, assignAllInstanceAddresses);
+FunctionMapper.addHandler(FUNCTION_MAPPER_CODE_FOR_ASSIGN_SENSOR_DEVICE_ADDRESS, assignDeviceAddress);
+FunctionMapper.addHandler(FUNCTION_MAPPER_CODE_FOR_DELETE_SENSOR_DEVICE_ADDRESS, deleteDeviceAddress);
+FunctionMapper.addHandler(FUNCTION_MAPPER_CODE_FOR_ASSIGN_ALL_INSTANCE_ADDRESSES, assignAllInstanceAddresses);
 
 /**********************************************************************
  * Load configured DS18B20 device addresses from EEPROM.
  */
-DEVICE_ADDRESSES.load();
+DeviceAddresses.load();
 
 /**********************************************************************
  * Start sensor operation on the OneWire bus.

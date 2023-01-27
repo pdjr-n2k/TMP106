@@ -20,7 +20,7 @@ tN2kSyncScheduler PGN130316Schedulers[] = {
  * sensor prior to transmission.
  */
 struct TemperatureReading { float temperature; unsigned char sid; };
-TemperatureReading  TEMPERATURE_READINGS[6] = {
+TemperatureReading  TemperatureReadings[6] = {
   { 0.0, 0 },
   { 0.0, 0 },
   { 0.0, 0 },
@@ -33,7 +33,7 @@ TemperatureReading  TEMPERATURE_READINGS[6] = {
  * @brief Create a persistent OneWireAddressTable for holding the
  * hardware addresses of connected aensors.
  */
-OneWireAddressTable DEVICE_ADDRESSES(NUMBER_OF_SUPPORTED_SENSORS, DEVICE_ADDRESSES_EEPROM_ADDRESS);
+OneWireAddressTable DeviceAddresses(NUMBER_OF_SUPPORTED_SENSORS, DEVICE_ADDRESSES_EEPROM_ADDRESS);
 
 
 /**
@@ -68,8 +68,8 @@ unsigned int configurationIndex(unsigned int sensor, unsigned int offset) {
 void onN2kOpen() {
   for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
     PGN130316Schedulers[sensor].SetPeriodAndOffset(
-      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(sensor, MODULE_CONFIGURATION_PGN130316_TRANSMIT_PERIOD_OFFSET) * 1000)),
-      (uint32_t) (MODULE_CONFIGURATION.getByte(configurationIndex(sensor, MODULE_CONFIGURATION_PGN130316_TRANSMIT_OFFSET_OFFSET) * 10))
+      (uint32_t) (ModuleConfiguration.getByte(configurationIndex(sensor, MODULE_CONFIGURATION_PGN130316_TRANSMIT_PERIOD_OFFSET) * 1000)),
+      (uint32_t) (ModuleConfiguration.getByte(configurationIndex(sensor, MODULE_CONFIGURATION_PGN130316_TRANSMIT_OFFSET_OFFSET) * 10))
     );
   }
 }
@@ -92,9 +92,9 @@ bool assignDeviceAddress(unsigned char unused, unsigned char sensorIndex) {
   if (sensorIndex < NUMBER_OF_SUPPORTED_SENSORS) {
     for (unsigned int i = 0; i < sensors.getDeviceCount(); i++) {
       if (sensors.getAddress(deviceAddress, i)) {
-        if (!DEVICE_ADDRESSES.contains(deviceAddress)) {
-          DEVICE_ADDRESSES.setAddress(sensorIndex, deviceAddress);
-          DEVICE_ADDRESSES.save();
+        if (!DeviceAddresses.contains(deviceAddress)) {
+          DeviceAddresses.setAddress(sensorIndex, deviceAddress);
+          DeviceAddresses.save();
           retval = true;
         }
         break;
@@ -118,8 +118,8 @@ bool deleteDeviceAddress(unsigned char unused, unsigned char sensorIndex) {
   bool retval = false;
 
   if (sensorIndex < NUMBER_OF_SUPPORTED_SENSORS) {
-    DEVICE_ADDRESSES.clearAddress(sensorIndex);
-    DEVICE_ADDRESSES.save();
+    DeviceAddresses.clearAddress(sensorIndex);
+    DeviceAddresses.save();
     retval = true;
   }
   return(retval);
@@ -142,7 +142,7 @@ bool assignAllInstanceAddresses(unsigned char unused, unsigned char startValue) 
   
   if (startValue < 247) {
     for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
-      MODULE_CONFIGURATION.setByte(configurationIndex(sensor, MODULE_CONFIGURATION_INSTANCE_OFFSET), startValue++);
+      ModuleConfiguration.setByte(configurationIndex(sensor, MODULE_CONFIGURATION_INSTANCE_OFFSET), startValue++);
     }
     retval = true;
   }
@@ -202,17 +202,17 @@ bool configurationValidator(unsigned int index, unsigned char value) {
 void transmitPGN130316(unsigned int sensorIndex) {
   tN2kMsg message;
   
-  if (TEMPERATURE_READINGS[sensorIndex].temperature > 0) {
+  if (TemperatureReadings[sensorIndex].temperature > 0) {
     SetN2kPGN130316(
       message,
-      TEMPERATURE_READINGS[sensorIndex].sid, 
-      MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_INSTANCE_OFFSET)),
-      (tN2kTempSource) MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SOURCE_OFFSET)),
-      (double) TEMPERATURE_READINGS[sensorIndex].temperature,
-      (double) ((MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_HI_BYTE_OFFSET)) * 255) + MODULE_CONFIGURATION.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_LO_BYTE_OFFSET)))
+      TemperatureReadings[sensorIndex].sid, 
+      ModuleConfiguration.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_INSTANCE_OFFSET)),
+      (tN2kTempSource) ModuleConfiguration.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SOURCE_OFFSET)),
+      (double) TemperatureReadings[sensorIndex].temperature,
+      (double) ((ModuleConfiguration.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_HI_BYTE_OFFSET)) * 255) + ModuleConfiguration.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_LO_BYTE_OFFSET)))
     );
     NMEA2000.SendMsg(message);
-    TRANSMIT_LED.setLedState(0, LedManager::once);
+    TransmitLed.setLedState(0, tLedManager::once);
   }
 }
 
@@ -231,10 +231,10 @@ void sampleSensorsMaybe() {
 
   if (now > deadline) {
     for (unsigned int sensor = 0; sensor < NUMBER_OF_SUPPORTED_SENSORS; sensor++) {
-      unsigned char *address = DEVICE_ADDRESSES.getAddress(sensor);
-      TEMPERATURE_READINGS[sensor].sid = (address)?sid:0;
-      TEMPERATURE_READINGS[sensor].temperature = (address)?(sensors.getTempC(address) + 273.0):0.0;
-      if (address) STATUS_LEDS.setLedState(sensor, LedManager::once);
+      unsigned char *address = DeviceAddresses.getAddress(sensor);
+      TemperatureReadings[sensor].sid = (address)?sid:0;
+      TemperatureReadings[sensor].temperature = (address)?(sensors.getTempC(address) + 273.0):0.0;
+      if (address) StatusLeds.setLedState(sensor, tLedManager::once);
     }
     sid++;
     sensors.requestTemperatures();
