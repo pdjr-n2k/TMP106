@@ -7,10 +7,6 @@
  * For the NOP100 module this file is intentionally empty.
  */
 
-FunctionMapper.addHandler(FUNCTION_MAPPER_CODE_FOR_ASSIGN_SENSOR_DEVICE_ADDRESS, assignDeviceAddress);
-FunctionMapper.addHandler(FUNCTION_MAPPER_CODE_FOR_DELETE_SENSOR_DEVICE_ADDRESS, deleteDeviceAddress);
-FunctionMapper.addHandler(FUNCTION_MAPPER_CODE_FOR_ASSIGN_ALL_INSTANCE_ADDRESSES, assignAllInstanceAddresses);
-
 /**********************************************************************
  * Load configured DS18B20 device addresses from EEPROM.
  */
