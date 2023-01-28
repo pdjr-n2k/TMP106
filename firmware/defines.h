@@ -1,4 +1,4 @@
-/**
+/**********************************************************************
  * @file defines.h
  * @author Paul Reeve (preeve@pdjr.eu)
  * @brief Define directives for TMP106.
@@ -7,12 +7,12 @@
  * @copyright Copyright (c) 2023
  */
 
-/**
+/**********************************************************************
  * @brief  Alias for GPIO pin used as OneWire bus connection. 
  */
 #define GPIO_ONE_WIRE_BUS GPIO_D23
 
-/**
+/**********************************************************************
  * @brief Overrides of NOP100 definitions.
  */
 #define DEVICE_CLASS 75                 // Sendor Communication Interface
@@ -28,12 +28,12 @@
 
 #define NMEA_TRANSMITTED_PGNS { 130316L, 0 }
 
-/**
+/**********************************************************************
  * @brief Number of supported sensors.
  */
 #define NUMBER_OF_SUPPORTED_SENSORS 6
 
-/**
+/**********************************************************************
  * @brief Configuration details.
  */
 #define MODULE_CONFIGURATION_SIZE 37
@@ -98,6 +98,9 @@
   MODULE_CONFIGURATION_SET_POINT_LO_BYTE_DEFAULT\
 }
 
+/**********************************************************************
+ * FunctionMapper configuration.
+ */
 bool assignDeviceAddress(unsigned char, unsigned char);
 bool deleteDeviceAddress(unsigned char, unsigned char);
 bool assignAllInstanceAddresses(unsigned char, unsigned char);
@@ -110,21 +113,23 @@ bool assignAllInstanceAddresses(unsigned char, unsigned char);
   { 0x00, 0 }\
 }
 
-/**
+/**********************************************************************
  * @brief OneWireAddressTable is persisted at this EEPROM location.
  */
 #define DEVICE_ADDRESSES_EEPROM_ADDRESS 100
 
-/**
- * @brief Interval at which to read temperature sensors. 
+/**********************************************************************
+ * @brief Interval at which to refresh/read temperature sensors. 
  * 
- * This specifies the frequency at which all temperature sensors will
- * be commanded to refresh their current temperature reading. A sensor
- * is actually read only at the interval defined in its configuration. 
+ * This specifies the frequency in milliseconds at which temperature
+ * sensors will be read and, by implication, the time allowed for
+ * sensors to acquire and convert new data. As soon as readings are
+ * taken, a bus command will be issued instructing all sensors to take
+ * new readings.
  */
 #define TEMPERATURE_SENSOR_REFRESH_INTERVAL 1000
 
-/**
+/**********************************************************************
  * @brief We override these functions in NOP100. 
  */
 #define ON_N2K_OPEN
