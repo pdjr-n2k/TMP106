@@ -98,10 +98,17 @@
   MODULE_CONFIGURATION_SET_POINT_LO_BYTE_DEFAULT\
 }
 
-#define FUNCTION_MAPPER_SIZE 4
-#define FUNCTION_MAPPER_CODE_FOR_ASSIGN_SENSOR_DEVICE_ADDRESS 0x01
-#define FUNCTION_MAPPER_CODE_FOR_DELETE_SENSOR_DEVICE_ADDRESS 0x02
-#define FUNCTION_MAPPER_CODE_FOR_ASSIGN_ALL_INSTANCE_ADDRESSES 0x40
+bool assignDeviceAddress(unsigned char, unsigned char);
+bool deleteDeviceAddress(unsigned char, unsigned char);
+bool assignAllInstanceAddresses(unsigned char, unsigned char);
+
+#define FUNCTION_MAP_ARRAY {\
+  { 0xff, [](unsigned char i, unsigned char v) -> bool { ModuleConfiguration.erase(); return(true); } },\
+  { 0x01, assignDeviceAddress },\
+  { 0x02, deleteDeviceAddress },\
+  { 0x04, assignAllInstanceAddresses },\
+  { 0x00, 0 }\
+}
 
 /**
  * @brief OneWireAddressTable is persisted at this EEPROM location.
