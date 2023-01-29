@@ -13,9 +13,9 @@
 #define GPIO_ONE_WIRE_BUS GPIO_D23
 
 /**********************************************************************
- * @brief Overrides of NOP100 definitions.
+ * @brief Device and product details.
  */
-#define DEVICE_CLASS 75                 // Sendor Communication Interface
+#define DEVICE_CLASS 75                 // Sensor Communication Interface
 #define DEVICE_FUNCTION 130             // Temperature
 #define DEVICE_UNIQUE_NUMBER 849        // Bump me?
 
@@ -26,6 +26,9 @@
 #define PRODUCT_TYPE "TMP106"           // The product name?
 #define PRODUCT_VERSION "1.0 (Mar 2022)"
 
+/**********************************************************************
+ * Transmitted and received PGNS.
+ */
 #define NMEA_TRANSMITTED_PGNS { 130316L, 0 }
 
 /**********************************************************************
