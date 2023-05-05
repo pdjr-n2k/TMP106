@@ -1,53 +1,71 @@
 /**********************************************************************
- * OneWireAddress.h (c) Paul Reeve <preeve@pdjr.eu>
- * 
- * ADT representation of a 64-bit OneWire bus device address.
- *
- * CONSTRUCTOR
- * 
- * OneWireAddress()
- * Create a new OneWireAddress instance initialised to a default value
- * of 0xffffffffffffffff.
- *
- * METHODS
- *  
- * setAddress(address)
- * Set this OneWire address by copying eight bytes from the <address>
- * byte array.
- * 
- * getAddress()
- * Return a pointer to the OneWire address eight byte array.
- * 
- * clearAddress()
- * Set this OneWire address to 0xffffffffffffffff.
- * 
- * setByte(index, value)
- * Set byte index of this OneWire address to value.
- * 
- * getByte(index)
- * Return the indexth byte of this OneWire address.
- * 
- * compare(address)
- * Compare this OneWire address with address using the memcmp()
- * function.
- */
-
+ * OneWireAddress.h
+ * Paul Reeve <preeve@pdjr.eu>
+ */ 
+ 
 #ifndef ONE_WIRE_ADDRESS
 #define ONE_WIRE_ADDRESS
 
-class OneWireAddress {
+/**
+ * @brief ADT representing a OneWire device address. 
+ */
+class tOneWireAddress {
 
   public:
-    OneWireAddress();
+
+    /**
+     * @brief Construct a new tOneWireAddress object.
+     * 
+     * If @ref address is not supplied, then the newly instantiated
+     * address is set to [ 0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff ].
+     * 
+     * @param address - byte array used to specify an initial address.
+     */
+    tOneWireAddress(unsigned char *address = 0);
     
+    /**
+     * @brief Set the address object to a specified value.
+     * 
+     * @param address  - byte array used to specify an initial address.
+     */
     void setAddress(unsigned char *address);
+
+    /**
+     * @brief Get the address object value. 
+     * 
+     * @return unsigned char*  - pointer to the address value as an
+     * eight byte array.
+     */
     unsigned char *getAddress();
+    
+    /**
+     * @brief Clear the address object the default value.
+     */
     void clearAddress();
 
+    /**
+     * @brief Set a specified byte of the address to a specified value.
+     * 
+     * @param index - index of the byte to be written.
+     * @param value - the value to be assigned.
+     */
     void setByte(int index, unsigned char value);
+
+    /**
+     * @brief Get a specified byte from the address.
+     * 
+     * @param index - index of the byte to be retrieved.
+     * @return unsigned char - the value the specified byte.
+     */
     unsigned char getByte(int index);
 
-    int compare(OneWireAddress *address);
+    /**
+     * @brief Compare two OneWire address objects.
+     * 
+     * @param address - the address to be compared.
+     * @return int - 0 if the addresses are equal.
+     */
+    int compare(tOneWireAddress *address);
 
   private:
     unsigned char address[8];

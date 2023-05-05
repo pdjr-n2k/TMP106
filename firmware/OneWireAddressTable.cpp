@@ -6,10 +6,10 @@
 OneWireAddressTable::OneWireAddressTable(unsigned int size, int eepromAddress) {
   this->size = size;
   this->eepromAddress = eepromAddress;
-  this->table = new OneWireAddress [this->size];
+  this->table = new tOneWireAddress [this->size];
 
   for (unsigned int i = 0; i < this->size; i++) {
-    this->table[i] = OneWireAddress();
+    this->table[i] = tOneWireAddress();
   }
 }
 
