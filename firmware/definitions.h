@@ -212,7 +212,7 @@ void transmitPGN130316(unsigned int sensorIndex) {
       (double) ((ModuleConfiguration.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_HI_BYTE_OFFSET)) * 255) + ModuleConfiguration.getByte(configurationIndex(sensorIndex, MODULE_CONFIGURATION_SET_POINT_LO_BYTE_OFFSET)))
     );
     NMEA2000.SendMsg(message);
-    TransmitLed.setLedState(0, tLedManager::once);
+    TransmitLed.setLedState(0, tLedManager::ONCE);
   }
 }
 
@@ -234,7 +234,7 @@ void sampleSensorsMaybe() {
       unsigned char *address = DeviceAddresses.getAddress(sensor);
       TemperatureReadings[sensor].sid = (address)?sid:0;
       TemperatureReadings[sensor].temperature = (address)?(sensors.getTempC(address) + 273.0):0.0;
-      if (address) StatusLeds.setLedState(sensor, tLedManager::once);
+      if (address) StatusLeds.setLedState(sensor, tLedManager::ONCE);
     }
     sid++;
     sensors.requestTemperatures();
