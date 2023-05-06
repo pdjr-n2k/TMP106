@@ -10,8 +10,8 @@
  */
 
  #include <ArduinoQueue.h>
- #include <OneWire.h>
  #include <DallasTemperature.h>
+ #include <ModuleConfiguration.h>
+ #include <OneWire.h>
  #include <ProcessQueue.h>
  #include "OneWireAddressTable.h"
- #include "ModuleConfiguration.h"

@@ -50,7 +50,7 @@ class OneWireAddressTable {
   private:
     unsigned int size;
     int eepromAddress;
-    tOneWireAddress *table;
+    OneWireAddress *table;
 
 };
 
